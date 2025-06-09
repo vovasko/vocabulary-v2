@@ -1,0 +1,52 @@
+{
+    "main_lang": "English",
+    "second_lang": "Ukrainian",
+    "examples": 1,
+    "meanings": 1,
+    "columns": {
+        "type": true,
+        "translation": true,
+        "second_translation": true,
+        "example": true,
+        "meaning": false,
+        "score": false
+    },
+    "flashcards": {
+        "type": false,
+        "translation": true,
+        "second_translation": false,
+        "example": false,
+        "meaning": false,
+        "score": false
+    },
+    "cards_in_deck": "20",
+    "lang_list": [
+        "English",
+        "Ukrainian",
+        "Spanish",
+        "French",
+        "Turkish",
+        "Portuguese",
+        "Italian",
+        "Romanian",
+        "Hungarian",
+        "Polish",
+        "Greek",
+        "Dutch",
+        "Czech",
+        "Swedish",
+        "Danish",
+        "Japanese",
+        "Catalan",
+        "Finnish",
+        "Norwegian",
+        "Basque",
+        "Serbian",
+        "Macedonian",
+        "Slovenian",
+        "Slovak",
+        "Bosnian",
+        "Croatian",
+        "Bulgarian"
+    ]
+}
