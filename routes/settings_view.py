@@ -1,12 +1,12 @@
 import flet as ft
 from services.settings import SettingsManager
+from components.appbar import AppBar
 
 settings = SettingsManager()
 
 class SettingsView(ft.Column):
-    def __init__(self, called_from: str = "/"):
+    def __init__(self):
         super().__init__()
-        self.called_from = called_from
         self.spacing = 12
         self.scroll = "auto"
         self.width = 500
@@ -20,7 +20,6 @@ class SettingsView(ft.Column):
             "margin" : ft.margin.only(12, 0, 12, 0)
         }
 
-        self.create_title()
         self.create_translation_layout()
         self.create_table_layout()
         self.create_flash_layout()
@@ -34,12 +33,12 @@ class SettingsView(ft.Column):
     def fetch_view(self) -> ft.View:
         return ft.View(
             route="/settings",
+            appbar=AppBar(title="Settings", on_exit=self.save_on_exit).build_settings(),
             horizontal_alignment = ft.CrossAxisAlignment.CENTER,
             controls=[
                 ft.Container(
                     content=ft.Column(
                         controls=[
-                            self.main_title,
                             ft.Container(
                                 content=self,
                                 expand=True
@@ -51,34 +50,37 @@ class SettingsView(ft.Column):
             ]
         )
     
-    def create_title(self):
-        def go_back(e: ft.ControlEvent):
-            settings.save()
-            # e.page.go(self.called_from)
-            if len(e.page.route_history) > 1:
-                # Remove current route
-                e.page.route_history.pop()
-                # Go to previous route
-                previous_route = e.page.route_history[-1]
-                e.page.go(previous_route)
+    def save_on_exit(self):
+        settings.save()
+    
+    # def create_title(self):
+    #     def go_back(e: ft.ControlEvent):
+    #         settings.save()
+    #         # e.page.go(self.called_from)
+    #         if len(e.page.route_history) > 1:
+    #             # Remove current route
+    #             e.page.route_history.pop()
+    #             # Go to previous route
+    #             previous_route = e.page.route_history[-1]
+    #             e.page.go(previous_route)
                     
-        self.main_title = ft.Container(
-            content=ft.Stack(
-                controls=[                    
-                    ft.Container( # Center-aligned title
-                        ft.Text("Settings", style=ft.TextThemeStyle.HEADLINE_SMALL),
-                        alignment=ft.alignment.center
-                    ),                    
-                    ft.Container( # Left-aligned button
-                        ft.ElevatedButton("Back", on_click=go_back, icon=ft.Icons.ARROW_BACK_IOS_ROUNDED),
-                        alignment=ft.alignment.center_left,
-                    )
-                ],
-                height=40,
-                width=500
-            ),
-            padding=10
-        )
+    #     self.main_title = ft.Container(
+    #         content=ft.Stack(
+    #             controls=[                    
+    #                 ft.Container( # Center-aligned title
+    #                     ft.Text("Settings", style=ft.TextThemeStyle.HEADLINE_SMALL),
+    #                     alignment=ft.alignment.center
+    #                 ),                    
+    #                 ft.Container( # Left-aligned button
+    #                     ft.ElevatedButton("Back", on_click=go_back, icon=ft.Icons.ARROW_BACK_IOS_ROUNDED),
+    #                     alignment=ft.alignment.center_left,
+    #                 )
+    #             ],
+    #             height=40,
+    #             width=500
+    #         ),
+    #         padding=10
+    #     )
         
     def create_translation_layout(self):
         title = ft.Container(

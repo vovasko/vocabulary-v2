@@ -1,6 +1,7 @@
 import flet as ft
 from routes.settings_view import SettingsView
 from routes.table_view import TableView
+from components.appbar import AppBar
 
 def home_view() -> ft.View:
     return ft.View(
@@ -11,7 +12,8 @@ def home_view() -> ft.View:
             ft.ElevatedButton("Go to Table", on_click=lambda e: e.page.go("/table"))
         ],
         vertical_alignment=ft.MainAxisAlignment.CENTER,
-        horizontal_alignment=ft.CrossAxisAlignment.CENTER
+        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        appbar=AppBar(title="Home Page 2.0").build_home()
     )
 
 def main(page: ft.Page):
@@ -32,17 +34,16 @@ def main(page: ft.Page):
     def route_change(e: ft.RouteChangeEvent):
         if page.route_history[-1] != page.route:
             page.route_history.append(page.route)
-        print(page.route_history)
         page.views.clear()
 
         if page.route == "/":
             page.views.append(home_view())
         elif page.route == "/settings":
-            # page.views.append(settings_view())
             page.views.append(SettingsView().fetch_view())
         elif page.route == "/table":
             page.views.append(TableView().fetch_view())
         page.update()
+        print(page.route_history)
 
     def view_pop(e: ft.ViewPopEvent):
         page.views.pop()
