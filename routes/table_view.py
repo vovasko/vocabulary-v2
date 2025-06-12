@@ -1,5 +1,6 @@
 import flet as ft
 from services.settings import SettingsManager
+from services.edit_dialog import EditDialog
 from components.appbar import AppBar
 from pandas import DataFrame
 
@@ -86,7 +87,7 @@ class TableView(ft.Column):
         self.table.delete_selected()
 
     def edit_selected(self, e):
-        self.table.edit_view()
+        self.table.edit_view(e)
 
 
 class ListViewTable(ft.ListView):
@@ -112,7 +113,7 @@ class ListViewTable(ft.ListView):
         self._build_content()
     
     def _build_content(self):
-        self.controls = [self.controls[0]]
+        self.controls = [self.controls[0]] # Delete all rows except header
 
         for row in self.records.itertuples(index=False):
             ref = ft.Ref[ft.Container]()
@@ -154,10 +155,13 @@ class ListViewTable(ft.ListView):
             ]
         else:
             bgcolor = ft.Colors.GREY
+            ref = ft.Ref[ft.Text]()
             controls_list = [
                 ft.Text(
                     value=getattr(data, col_name),
                     expand=self.column_flexes_dict[col_name],
+                    ref=ref,
+                    data={"ref":ref, "col":col_name},
                     **text_style
                 )
                 for col_name in self.header
@@ -206,11 +210,24 @@ class ListViewTable(ft.ListView):
         self.update()
         self.on_selection_changed(0)
 
-    def edit_view(self):
+    def edit_view(self, e):
         print("Edit view called")
-        row_data = self.selected_refs[0].current.content.controls
-        for cell in row_data:
-            print(cell.value)
+        dialog = EditDialog(self.selected_refs[0].current, self.save_updated_record)
+        if self not in e.page.overlay:
+            e.page.overlay.append(dialog)
+        dialog.open = True
+        e.page.update()
+
+        # row_data = self.selected_refs[0].current.content.controls
+        # for cell in row_data:
+        #     print(cell.value)
+
+        # self.selected_refs[0].current.padding = ft.padding.symmetric(horizontal=10, vertical=100)
+        # self.selected_refs[0].current.update()
+
+    def save_updated_record(self):
+        self.selected_refs.clear()
+        self.on_selection_changed(0)
 
     def sort(self, col_name: str):
         if self.last_sort["col"] == col_name:
