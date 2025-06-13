@@ -52,35 +52,6 @@ class SettingsView(ft.Column):
     
     def save_on_exit(self):
         settings.save()
-    
-    # def create_title(self):
-    #     def go_back(e: ft.ControlEvent):
-    #         settings.save()
-    #         # e.page.go(self.called_from)
-    #         if len(e.page.route_history) > 1:
-    #             # Remove current route
-    #             e.page.route_history.pop()
-    #             # Go to previous route
-    #             previous_route = e.page.route_history[-1]
-    #             e.page.go(previous_route)
-                    
-    #     self.main_title = ft.Container(
-    #         content=ft.Stack(
-    #             controls=[                    
-    #                 ft.Container( # Center-aligned title
-    #                     ft.Text("Settings", style=ft.TextThemeStyle.HEADLINE_SMALL),
-    #                     alignment=ft.alignment.center
-    #                 ),                    
-    #                 ft.Container( # Left-aligned button
-    #                     ft.ElevatedButton("Back", on_click=go_back, icon=ft.Icons.ARROW_BACK_IOS_ROUNDED),
-    #                     alignment=ft.alignment.center_left,
-    #                 )
-    #             ],
-    #             height=40,
-    #             width=500
-    #         ),
-    #         padding=10
-    #     )
         
     def create_translation_layout(self):
         title = ft.Container(
@@ -196,8 +167,6 @@ class SettingsView(ft.Column):
     def create_switch_controls(self, parent) -> list[ft.Row]:
         # Parent is name of a root setting for the nested one - ["columns", "flashcards"]
         def change(e: ft.ControlEvent):
-            # print(e.control.label.value)
-            # print(e.control.value)
             settings.set(
                 key=e.control.label.value,
                 value=e.control.value
@@ -206,6 +175,7 @@ class SettingsView(ft.Column):
         controls = []
         
         for key,value in settings.get(parent, {}).items():
+            if key == "german": continue
             row = ft.Row(
                 spacing=0,
                 controls=[

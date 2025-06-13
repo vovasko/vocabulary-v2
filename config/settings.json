@@ -5,14 +5,16 @@
     "meanings": 1,
     "columns": {
         "type": true,
+        "german": true,
         "translation": true,
         "second_translation": true,
         "example": true,
         "meaning": false,
-        "score": false
+        "score": true
     },
     "flashcards": {
         "type": false,
+        "german": true,
         "translation": true,
         "second_translation": false,
         "example": false,
