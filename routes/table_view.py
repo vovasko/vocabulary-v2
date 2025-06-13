@@ -1,11 +1,12 @@
 import flet as ft
 from services.settings import SettingsManager
 from services.edit_dialog import EditDialog
+from services.DF_manager import DFManager
 from components.appbar import AppBar
 from pandas import DataFrame
 
 class TableView(ft.Column):
-    def __init__(self):
+    def __init__(self, df_manager: DFManager):
         super().__init__(spacing=12, scroll="auto", width=500, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
 
         self.container_style = {
@@ -16,12 +17,11 @@ class TableView(ft.Column):
             "margin" : ft.margin.only(12, 0, 12, 0)
         }
         self.settings = SettingsManager()
-        self.records = DataFrame()
+        self.df_manager = df_manager
         self.create_controls()
-        self.fill_records()
 
         self.appbar = AppBar(title="Table").build()
-        self.table = ListViewTable(self.records, self.update_buttons, self.settings)
+        self.table = ListViewTable(self.df_manager, self.update_buttons, self.settings)
 
     def fetch_view(self):
         return ft.View(
@@ -47,13 +47,6 @@ class TableView(ft.Column):
                 )
             ]
         )
-    
-    def fill_records(self):
-        dummy_data = [
-            [f"type", f"Word number {i}", f"Here goes translation", "Here goes another translation", "Some long sentance goes here", "Some long sentance goes here", i%4]
-            for i in range(20)
-        ]
-        self.records = DataFrame(data=dummy_data, columns=list(self.settings.get("columns").keys()))
     
     def create_controls(self):
         self.delete_btn = ft.ElevatedButton(
@@ -91,9 +84,10 @@ class TableView(ft.Column):
 
 
 class ListViewTable(ft.ListView):
-    def __init__(self, records: DataFrame, on_selection_changed: callable, settings: SettingsManager):
+    def __init__(self, df_manager: DFManager, on_selection_changed: callable, settings: SettingsManager):
         super().__init__(spacing=10, padding=20, auto_scroll=False, expand=True)
-        self.records = records
+        self.df_manager = df_manager
+        self.records = df_manager.data
         self.selected_refs: list[ft.Ref] = []
         self.on_selection_changed = on_selection_changed
         self.settings = settings
@@ -115,7 +109,7 @@ class ListViewTable(ft.ListView):
     def _build_content(self):
         self.controls = [self.controls[0]] # Delete all rows except header
 
-        for row in self.records.itertuples(index=False):
+        for row in self.records.itertuples():
             ref = ft.Ref[ft.Container]()
             container = self._build_row(row, ref=ref)
             self.controls.append(container)
@@ -166,7 +160,6 @@ class ListViewTable(ft.ListView):
                 )
                 for col_name in self.header
             ]
-
         row = ft.Container(
             content=ft.Row(
                 controls=controls_list,
@@ -180,7 +173,7 @@ class ListViewTable(ft.ListView):
             ink=True,
             animate=ft.Animation(200, "easeInOut"),
             ref=ref,
-            data={"ref": ref} if ref else None,
+            data={"ref": ref,"rowid": data.Index} if not is_header else None,
         )
         if not is_header:
             row.on_click = self.on_container_click
@@ -203,12 +196,15 @@ class ListViewTable(ft.ListView):
         self.on_selection_changed(len(self.selected_refs))
 
     def delete_selected(self):
+        rowids = []
         for ref in self.selected_refs:
             if ref.current and ref.current in self.controls:
                 self.controls.remove(ref.current)
+                rowids.append(ref.current.data["rowid"])
         self.selected_refs.clear()
         self.update()
         self.on_selection_changed(0)
+        self.df_manager.delete_rows(rowids)
 
     def edit_view(self, e):
         print("Edit view called")
@@ -217,13 +213,6 @@ class ListViewTable(ft.ListView):
             e.page.overlay.append(dialog)
         dialog.open = True
         e.page.update()
-
-        # row_data = self.selected_refs[0].current.content.controls
-        # for cell in row_data:
-        #     print(cell.value)
-
-        # self.selected_refs[0].current.padding = ft.padding.symmetric(horizontal=10, vertical=100)
-        # self.selected_refs[0].current.update()
 
     def save_updated_record(self):
         self.selected_refs.clear()
@@ -235,6 +224,7 @@ class ListViewTable(ft.ListView):
         else: 
             self.last_sort["col"] = col_name
             self.last_sort["asc"] = True
+
         self.records.sort_values(by=col_name, inplace=True, ascending=self.last_sort["asc"])
         self._build_content()
         self.update()

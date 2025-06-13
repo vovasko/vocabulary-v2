@@ -1,6 +1,7 @@
 import flet as ft
 from routes.settings_view import SettingsView
 from routes.table_view import TableView
+from services.DF_manager import DFManager
 from components.appbar import AppBar
 
 def home_view() -> ft.View:
@@ -18,10 +19,11 @@ def home_view() -> ft.View:
 
 def main(page: ft.Page):
     page.title = "Routing Demo"
-    page.window.min_width = 500
-    page.window.min_height = 500
-    # page.show_semantics_debugger = True
+    page.window.min_width = 700
+    page.window.min_height = 650
+    page.window.height = 650
     page.route_history = ["/"]
+    page.df_manager = DFManager()
 
     page.fonts = {
         "Inter":"fonts/Inter-Regular.ttf",
@@ -41,7 +43,7 @@ def main(page: ft.Page):
         elif page.route == "/settings":
             page.views.append(SettingsView().fetch_view())
         elif page.route == "/table":
-            page.views.append(TableView().fetch_view())
+            page.views.append(TableView(page.df_manager).fetch_view())
         page.update()
         print(page.route_history)
 
