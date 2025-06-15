@@ -3,7 +3,6 @@ from services.settings import SettingsManager
 from services.edit_dialog import EditDialog
 from services.DF_manager import DFManager
 from components.appbar import AppBar
-from pandas import DataFrame
 
 class TableView(ft.Column):
     def __init__(self, df_manager: DFManager):
@@ -35,7 +34,8 @@ class TableView(ft.Column):
                             ft.Row(
                                 controls=[
                                     self.delete_btn,
-                                    self.edit_btn
+                                    self.edit_btn,
+                                    self.sort_btn
                                 ],
                                 alignment=ft.MainAxisAlignment.SPACE_AROUND
                             ),
@@ -45,14 +45,15 @@ class TableView(ft.Column):
                     ),
                     expand=True,
                 )
-            ]
+            ],
+            floating_action_button=self.add_btn
         )
     
     def create_controls(self):
         self.delete_btn = ft.ElevatedButton(
             "Delete",
             disabled=True,
-            on_click=self.delete_selected,
+            on_click=lambda e: self.table.delete_selected(),
             bgcolor=ft.Colors.RED_300,
             icon=ft.Icons.DELETE_FOREVER_ROUNDED,
             width=100
@@ -60,10 +61,22 @@ class TableView(ft.Column):
         self.edit_btn = ft.ElevatedButton(
             "Edit",
             disabled=True,
-            on_click=self.edit_selected,
+            on_click=lambda e: self.table.call_dialog(e),
             bgcolor=ft.Colors.GREY_500,
             icon=ft.Icons.EDIT_ROUNDED,
             width=100
+        )
+        self.sort_btn = ft.ElevatedButton(
+            "Sort",
+            on_click=lambda e: self.table.sort(col_name="index"),
+            bgcolor=ft.Colors.GREY_500,
+            icon=ft.Icons.SORT_ROUNDED,
+            width=100
+        )
+        self.add_btn = ft.FloatingActionButton(
+            icon=ft.Icons.ADD, 
+            on_click=lambda e: self.table.call_dialog(e, mode="new"),
+            tooltip="Add new word",
         )
     
     def update_buttons(self, selected_count: int):
@@ -75,13 +88,6 @@ class TableView(ft.Column):
         elif not self.edit_btn.disabled:
             self.edit_btn.disabled = True
             self.edit_btn.update()
-
-    def delete_selected(self, e):
-        self.table.delete_selected()
-
-    def edit_selected(self, e):
-        self.table.edit_view(e)
-
 
 class ListViewTable(ft.ListView):
     def __init__(self, df_manager: DFManager, on_selection_changed: callable, settings: SettingsManager):
@@ -96,7 +102,7 @@ class ListViewTable(ft.ListView):
 
     def build_table(self):
         self.controls.clear()
-        self.last_sort = {"col": None, "asc": True}
+        self.last_sort = {"col": None, "asc": False}
         self.header = []
         self.column_flexes_dict = { "type": 2, "german": 4, "translation": 6,
             "second_translation": 6, "example": 8, "meaning": 8, "score": 1 }
@@ -114,7 +120,7 @@ class ListViewTable(ft.ListView):
             container = self._build_row(row, ref=ref)
             self.controls.append(container)
 
-    def _build_row(self, data: tuple | list[str], ref=None, is_header=False):        
+    def _build_row(self, data: tuple | list[str], ref=None, is_header = False):  
         bgcolor = ft.Colors.GREY_700 if is_header else ft.Colors.GREY
         text_style = {
             "size":14,
@@ -148,7 +154,6 @@ class ListViewTable(ft.ListView):
                 for col_text, col_name in zip(text_data, data)
             ]
         else:
-            bgcolor = ft.Colors.GREY
             ref = ft.Ref[ft.Text]()
             controls_list = [
                 ft.Text(
@@ -160,6 +165,7 @@ class ListViewTable(ft.ListView):
                 )
                 for col_name in self.header
             ]
+
         row = ft.Container(
             content=ft.Row(
                 controls=controls_list,
@@ -206,25 +212,43 @@ class ListViewTable(ft.ListView):
         self.on_selection_changed(0)
         self.df_manager.delete_rows(rowids)
 
-    def edit_view(self, e):
-        print("Edit view called")
-        dialog = EditDialog(self.selected_refs[0].current, self.save_updated_record)
+    def call_dialog(self, e, mode: str = "edit"):
+        # mode = [edit, new]
+        print(f"Dialog called")
+        if mode == "new": 
+            dialog = EditDialog(None, self.save_new_record) # Call New dialog
+        else:
+            dialog = EditDialog(self.selected_refs[0].current, self.save_updated_record) # Call Edit dialog
+        
         if self not in e.page.overlay:
             e.page.overlay.append(dialog)
         dialog.open = True
         e.page.update()
 
     def save_updated_record(self):
+        container = self.selected_refs[0].current
+        self.df_manager.update_record(container)
         self.selected_refs.clear()
         self.on_selection_changed(0)
+    
+    def save_new_record(self, new_row: dict):
+        self.df_manager.create_new_record(new_row)
+        self.df_manager = DFManager()
+        self.records = self.df_manager.data
+        self._build_content()
+        self.update()
 
     def sort(self, col_name: str):
         if self.last_sort["col"] == col_name:
             self.last_sort["asc"] = not self.last_sort["asc"]
         else: 
             self.last_sort["col"] = col_name
-            self.last_sort["asc"] = True
-
-        self.records.sort_values(by=col_name, inplace=True, ascending=self.last_sort["asc"])
+            self.last_sort["asc"] = True if col_name != "index" else False
+        
+        if col_name == "index":
+            self.records.sort_index(inplace=True, ascending=self.last_sort["asc"])
+        else:
+            self.records.sort_values(by=col_name, inplace=True, ascending=self.last_sort["asc"], key=lambda col: col.str.lower())
+        
         self._build_content()
         self.update()
