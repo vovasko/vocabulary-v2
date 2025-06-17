@@ -1,6 +1,7 @@
 import flet as ft
 from routes.settings_view import SettingsView
 from routes.table_view import TableView
+from routes.flash_view import FlashCardView
 from services.DF_manager import DFManager
 from components.appbar import AppBar
 
@@ -10,7 +11,8 @@ def home_view() -> ft.View:
         controls=[
             ft.Text("Home Page 2.0"),
             ft.ElevatedButton("Go to Settings", on_click=lambda e: e.page.go("/settings"), icon=ft.Icons.SETTINGS_ROUNDED),
-            ft.ElevatedButton("Go to Table", on_click=lambda e: e.page.go("/table"))
+            ft.ElevatedButton("Go to Table", on_click=lambda e: e.page.go("/table")),
+            ft.ElevatedButton("Go to Flash Cards", on_click=lambda e: e.page.go("/flash"))
         ],
         vertical_alignment=ft.MainAxisAlignment.CENTER,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -44,6 +46,8 @@ def main(page: ft.Page):
             page.views.append(SettingsView().fetch_view())
         elif page.route == "/table":
             page.views.append(TableView(page.df_manager).fetch_view())
+        elif page.route == "/flash":
+            page.views.append(FlashCardView(page.df_manager).fetch_view())
         page.update()
         print(page.route_history)
 

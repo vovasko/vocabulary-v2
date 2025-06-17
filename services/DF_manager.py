@@ -15,14 +15,14 @@ class DFManager():
         self.data.drop(rowids, inplace=True)
         rows_to_delete = [{"rowid": n} for n in rowids]
         self.db.delete_data(data=rows_to_delete)
-        self.print_info()
 
-    def print_info(self):
-        print(self.data.info())
+    def print_info(self, df: pd.DataFrame = None):
+        if not isinstance(df, pd.DataFrame): df = self.data
+        print(df.info())
         print(f"{'':=^100}")
-        print(self.data)
+        print(df)
 
-    def update_record(self, container: Container):
+    def update_record(self, container: Container): # Update method for updates from edit dialog
         row_index = container.data["rowid"]
         new_row = {}
         for control in container.content.controls:
@@ -39,7 +39,14 @@ class DFManager():
         else:
             print(f"[ERROR] Index {row_index} not found in DataFrame.")
 
+    def update_scores(self, df: pd.DataFrame):
+        self.db.update_data(data=df) # Update scores for selected rowids
+        self.fill_data() # Than refresh DF
+
     def create_new_record(self, new_row: dict):
         self.db.insert_data(new_row) # Insert row first in DB
         self.fill_data() # Than refresh DF
         print(self.data)
+
+    def fetch_df(self, mode: str) -> pd.DataFrame:
+        return self.db.to_dataframe(mode)
