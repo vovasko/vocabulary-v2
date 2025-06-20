@@ -1,5 +1,6 @@
 import sqlite3
-import pandas as pd
+from pandas import DataFrame, read_sql_query
+import re
 from pathlib import Path
 
 class DBManager:
@@ -37,11 +38,11 @@ class DBManager:
 
             connection.commit()
 
-    def insert_data(self, data: dict | list | pd.DataFrame): # ensure to always form dictionaries 
+    def insert_data(self, data: dict | list | DataFrame): # ensure to always form dictionaries 
         with sqlite3.connect(self.path) as connection:
             cursor = connection.cursor()
 
-            if isinstance(data, pd.DataFrame): 
+            if isinstance(data, DataFrame): 
                 if "rowid" in data.columns: # if rowid is in the df, make it index
                         data.set_index("rowid", inplace=True)
                 data = data.to_dict(orient="records")
@@ -63,11 +64,11 @@ class DBManager:
             except Exception as e:
                 print("Error:", e)
 
-    def update_data(self, data: dict | list | pd.DataFrame): # to bulk update, all columns should be same
+    def update_data(self, data: dict | list | DataFrame): # to bulk update, all columns should be same
         with sqlite3.connect(self.path) as connection:
             cursor = connection.cursor()
 
-            if isinstance(data, pd.DataFrame):
+            if isinstance(data, DataFrame):
                 if "rowid" not in data.columns: # if rowid is not in the df, add it from index
                         data.reset_index(inplace=True)
                 data = data.to_dict(orient="records")
@@ -91,7 +92,7 @@ class DBManager:
             except Exception as e:
                 print("Error:", e)
             
-    def delete_data(self, data: dict | list | pd.DataFrame):
+    def delete_data(self, data: dict | list | DataFrame):
         with sqlite3.connect(self.path) as connection:
             cursor = connection.cursor()
 
@@ -102,7 +103,7 @@ class DBManager:
             try:
                 if isinstance(data, list):
                     cursor.executemany(delete_query, data)
-                elif isinstance(data, pd.DataFrame):
+                elif isinstance(data, DataFrame):
                     if "rowid" not in data.columns: # if rowid is not in the df, add it from index
                         data.reset_index(inplace=True)
                     data_list = data.to_dict(orient="records")
@@ -124,24 +125,31 @@ class DBManager:
             connection.commit()
         
     def fetch_data(self, mode: str = "all", just_return_query: bool = False) -> list | str:
-        # return either a list of tuples or a query string
         with sqlite3.connect(self.path) as connection:
             cursor = connection.cursor()
+            select_query = "SELECT rowid, * FROM vocabulary "
 
             match mode:
-                case "duplicates": select_query = """
-                                    SELECT rowid, * FROM vocabulary
+                case "duplicates": select_query += """                                    
                                     WHERE (type, german) IN (
                                         SELECT type, german FROM vocabulary
                                         GROUP BY type, german
                                         HAVING COUNT(*) > 1
                                     ); """
-                case "new"       : select_query = "SELECT rowid, * FROM vocabulary WHERE score = 0;"
-                case "nouns"     : select_query = "SELECT rowid, * FROM vocabulary WHERE type IN ('NOUN', 'PROPN', 'der', 'die', 'das');"
-                case "verbs"     : select_query = "SELECT rowid, * FROM vocabulary WHERE type IN ('VERB', 'AUX');"
-                case "adjectives": select_query = "SELECT rowid, * FROM vocabulary WHERE type IN ('ADJ', 'ADP', 'ADV');"
-                case "other"     : select_query = "SELECT rowid, * FROM vocabulary WHERE type NOT IN ('NOUN', 'VERB', 'ADJ', 'PROPN', 'AUX', 'ADP', 'ADV', 'der', 'die', 'das');"
-                case _           : select_query = "SELECT rowid, * FROM vocabulary;" # all
+                case "nulls"     : select_query += """
+                                    WHERE translation IS NULL
+                                    OR second_translation IS NULL
+                                    OR example IS NULL
+                                    OR meaning IS NULL;
+                                    """
+                case "new"       : select_query += "WHERE score = 0;"
+                case "repeat"    : select_query += "WHERE score IN (-1, 1);"
+                case "learnt"    : select_query += "WHERE score IN (2, 3);"
+                case "nouns"     : select_query += "WHERE type IN ('NOUN', 'PROPN', 'der', 'die', 'das');"
+                case "verbs"     : select_query += "WHERE type IN ('VERB', 'AUX');"
+                case "adjectives": select_query += "WHERE type IN ('ADJ', 'ADP', 'ADV');"
+                case "other"     : select_query += "WHERE type NOT IN ('NOUN', 'VERB', 'ADJ', 'PROPN', 'AUX', 'ADP', 'ADV', 'der', 'die', 'das');"
+                case _           : select_query += ";" # all
 
             if just_return_query:
                 return select_query
@@ -150,37 +158,29 @@ class DBManager:
                 return cursor.fetchall()
             
     def count_rows(self, mode: str = "all") -> int:
+        select_query = self.fetch_data(mode, just_return_query=True)
+
+        match = re.search(r'\bFROM\b', select_query, re.IGNORECASE)
+        if match:
+            from_index = match.start()
+            count_query = 'SELECT COUNT(*) ' + select_query[from_index:]
+        else: count_query = "SELECT COUNT(*) FROM vocabulary;"
+
         with sqlite3.connect(self.path) as connection:
             cursor = connection.cursor()
-
-            match mode:
-                case "duplicates": count_query = """
-                                    SELECT COUNT(*) FROM vocabulary
-                                    WHERE (type, german) IN (
-                                        SELECT type, german FROM vocabulary
-                                        GROUP BY type, german
-                                        HAVING COUNT(*) > 1
-                                    ); """
-                case "nulls"     : count_query = """
-                                    SELECT COUNT(*) FROM vocabulary
-                                    WHERE translation IS NULL
-                                    OR second_translation IS NULL
-                                    OR example IS NULL
-                                    OR meaning IS NULL;
-                                    """
-                case "new"       : count_query = "SELECT COUNT(*) FROM vocabulary WHERE score = 0;"
-                case _           : count_query = "SELECT COUNT(*) FROM vocabulary;"
-
             cursor.execute(count_query)
             return cursor.fetchone()[0]
 
-    def to_dataframe(self, mode: str = "all") -> pd.DataFrame:
-        query = self.fetch_data(mode, just_return_query=True) # get query according to given mode
+    def to_dataframe(self, mode: str = "all", filters: tuple[str, list] = None) -> DataFrame:
+        if mode == "filter" and filters is not None:
+            query = self.create_filter_query(filters)
+        else: 
+            query = self.fetch_data(mode, just_return_query=True) # get query according to given mode
         with sqlite3.connect(self.path) as connection:
-            # read the data into a DataFrame and make rowid the index
-            return pd.read_sql_query(query, connection, index_col="rowid") 
+            # read the data into DataFrame and make rowid the index
+            return read_sql_query(query, connection, index_col="rowid") 
         
-    def update_from_df(self, df: pd.DataFrame):
+    def update_from_df(self, df: DataFrame):
         if "rowid" not in df.columns: # if rowid is not in the df, add it from index
             df.reset_index(inplace=True)
 
@@ -193,3 +193,32 @@ class DBManager:
             """
             cursor.execute(query)
             connection.commit()
+
+    def create_filter_query(self, filter_tuple: tuple[str, list]):
+        select_query = "SELECT rowid, * FROM vocabulary "
+
+        if filter_tuple[0] in ("type", "score"):
+            values = ", ".join(f"'{elem}'" for elem in filter_tuple[1])
+            select_query += f"WHERE {filter_tuple[0]} IN ({values});" 
+        if filter_tuple[0] in ("TYPE"):
+            values = ""
+            other_type = ""
+            for mode in filter_tuple[1]:
+                match mode:
+                    case "noun"     : values += "'NOUN', 'PROPN', 'der', 'die', 'das',"
+                    case "verb"     : values += "'VERB', 'AUX'," 
+                    case "adjective": values += "'ADJ', 'ADP', 'ADV',"
+                    case "other"    : other_type += "WHERE type NOT IN ('NOUN', 'VERB', 'ADJ', 'PROPN', 'AUX', 'ADP', 'ADV', 'der', 'die', 'das')"
+                    case _          : pass # all
+            
+            if other_type:
+                select_query += other_type
+                if values: # if len(values) > 0
+                    select_query += f" OR type IN ({values[:-1]});" 
+                else:  select_query += ';'
+            elif values: select_query += f"WHERE type IN ({values[:-1]});"
+            else: select_query += ';'
+
+            
+
+        return select_query

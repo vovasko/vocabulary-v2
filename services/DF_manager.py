@@ -48,5 +48,5 @@ class DFManager():
         self.fill_data() # Than refresh DF
         print(self.data)
 
-    def fetch_df(self, mode: str) -> pd.DataFrame:
-        return self.db.to_dataframe(mode)
+    def fetch_df(self, mode: str, filters: tuple[str, str|list] = None) -> pd.DataFrame:
+        return self.db.to_dataframe(mode, filters=filters)
