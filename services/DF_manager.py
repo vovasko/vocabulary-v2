@@ -44,9 +44,11 @@ class DFManager():
         self.fill_data() # Than refresh DF
 
     def create_new_record(self, new_row: dict):
+        for key in new_row.keys():
+            if new_row[key] in ("", "-"):
+                new_row[key] = None
         self.db.insert_data(new_row) # Insert row first in DB
         self.fill_data() # Than refresh DF
-        print(self.data)
 
     def fetch_df(self, mode: str, filters: tuple[str, str|list] = None) -> pd.DataFrame:
         return self.db.to_dataframe(mode, filters=filters)

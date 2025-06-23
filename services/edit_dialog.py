@@ -5,7 +5,6 @@ class EditDialog(ft.AlertDialog):
         # If container is None - create Add New view, else - Edit View
         super().__init__(modal=True)
         self.is_edit = bool(container)
-        print(self.is_edit)
         self.title = ft.Row(
             controls=[
                 ft.Icon(name="EDIT_ROUNDED"),
@@ -34,9 +33,11 @@ class EditDialog(ft.AlertDialog):
         self.controls = []
         if self.is_edit: self.create_edit_controls()
         else: self.create_new_controls()
+
+        self.alert_msg = ft.Text("Please fill all marked fields", color=ft.Colors.RED, visible=False)
             
         self.content = ft.Column(
-            controls=self.controls,
+            controls=[*self.controls, self.alert_msg,],
             tight=True,
             spacing=10,
             width=400
@@ -59,14 +60,15 @@ class EditDialog(ft.AlertDialog):
                             ft.Text("Score:", size=18),
                             self.score_btn,
                         ],
-                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                        data={"col_name":"score"}
                     )
                 )
             else:
                 self.controls.append(
                     ft.TextField(
                         label=col_name.replace("_", " ").capitalize(),
-                        value="", 
+                        value=None, 
                         data={"col_name":col_name})
                 )
 
@@ -78,16 +80,18 @@ class EditDialog(ft.AlertDialog):
                     ft.Row(
                         controls=[
                             ft.Text("Score:", size=18),
-                            self.score_btn,
+                            self.score_btn
                         ],
-                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                        data={"col_name":"score"}
                     )
                 )
             else:
                 self.controls.append(
                     ft.TextField(
                         label=control.data["col"].replace("_", " ").capitalize(), 
-                        value=control.value
+                        value=control.value,
+                        data={"col_name":control.data["col"]}
                     )
                 )
 
@@ -102,30 +106,55 @@ class EditDialog(ft.AlertDialog):
         e.page.update()
 
     def save_data(self, e: ft.ControlEvent):
-        if self.is_edit:
-            self.save_updated_row()
-        else:
-            self.save_new_row()
+        if self.is_edit: saved = self.save_updated_row()
+        else: saved = self.save_new_row()
 
-        self.close_dlg(e)
+        if saved: self.close_dlg(e)
 
-    def save_updated_row(self):
-        self.original_container.bgcolor = ft.Colors.GREY
+    def save_updated_row(self) -> bool: # Returns save confirmation
+        values = []
         for original_control, new_control in zip(self.original_container.content.controls, self.controls):
             if isinstance(new_control, ft.Row):
                 original_control.value = self.score_options[self.score_btn.selected_index]
-            else: original_control.value = new_control.value
+            else: 
+                original_control.value = new_control.value
+                if new_control.data["col_name"] in ("type", "german"): 
+                    values.append(new_control.value)
 
+        if not self.check_important_vals(values=values):
+            self.highlight_important_vals()
+            return False
+
+        self.original_container.bgcolor = ft.Colors.GREY
         self.original_container.update()
         if self.on_save:
             self.on_save()
+        return True
 
-    def save_new_row(self):
+    def save_new_row(self) -> bool: # Returns save confirmation
         for control in self.controls:
             if isinstance(control, ft.Row):
                 self.new_row["score"] = self.score_options[self.score_btn.selected_index]
             else: 
                 self.new_row[control.data["col_name"]] = control.value
+        
+        if not self.check_important_vals(values=[self.new_row["type"], self.new_row["german"]]):
+            self.highlight_important_vals()
+            return False
 
         if self.on_save:
-            self.on_save(self.new_row)                
+            self.on_save(self.new_row)
+        return True
+
+    def check_important_vals(self, values: list) -> bool:
+        for value in values:
+            if value in ("", " ", "-", None):
+                return False
+        return True
+            
+    def highlight_important_vals(self):
+        for control in self.controls:
+            if control.data["col_name"] in ("type", "german"):
+                control.border_color = ft.Colors.RED
+        self.alert_msg.visible = True
+        self.update()

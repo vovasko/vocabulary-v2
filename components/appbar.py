@@ -34,7 +34,7 @@ class AppBar:
     
     def build(self):    
         return ft.AppBar(
-            title=ft.Text(self.title),
+            title=ft.Text(self.title, font_family="Inter-SemiBold"),
             actions=[
                 self.home_btn,
                 self.sett_btn
@@ -45,7 +45,7 @@ class AppBar:
 
     def build_home(self):            
         return ft.AppBar(
-            title=ft.Text(self.title),
+            title=ft.Text(self.title, font_family="Inter-SemiBold"),
             actions=[
                 self.sett_btn
             ],
@@ -54,7 +54,7 @@ class AppBar:
     
     def build_settings(self):            
         return ft.AppBar(
-            title=ft.Text(self.title),
+            title=ft.Text(self.title, font_family="Inter-SemiBold"),
             center_title=True,
             leading=self.back_btn
         )

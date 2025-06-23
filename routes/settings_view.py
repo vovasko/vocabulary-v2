@@ -6,12 +6,7 @@ settings = SettingsManager()
 
 class SettingsView(ft.Column):
     def __init__(self):
-        super().__init__()
-        self.spacing = 12
-        self.scroll = "auto"
-        self.width = 500
-        self.expand = True
-        self.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+        super().__init__(spacing=12, scroll="auto", width=500, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
         self.container_style = {
             "width" : self.width,
             "bgcolor" : ft.Colors.GREY_900,
@@ -233,7 +228,7 @@ class SettingsView(ft.Column):
                 options = ["5", "10", "20", "30", "All"]
                 selected_index = options.index(str(current_value)) if str(current_value) in options else 0
             case _ : 
-                options = [0, 1, 2, 3]
+                options = [0, 1, 2]
                 selected_index = options.index(current_value) if current_value in options else 0
 
         btn = ft.CupertinoSlidingSegmentedButton(

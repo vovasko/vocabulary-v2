@@ -21,7 +21,8 @@ class TableView(ft.Column):
         self.create_filter_controls()
 
         self.controls = [
-            ft.Container(ft.Column([self.btn_row, self.filter_row]), padding=ft.padding.only(left=30, right=30)),
+            self.btn_row, 
+            self.filter_row,
             self.table
         ]
 
@@ -36,7 +37,8 @@ class TableView(ft.Column):
                     expand=True,
                 )
             ],
-            floating_action_button=self.add_btn
+            floating_action_button=self.add_btn,
+            padding=ft.padding.only(left=30, right=30, top=10, bottom=10)
         )
     
     def create_controls(self):
@@ -182,7 +184,7 @@ class TableView(ft.Column):
 
 class ListViewTable(ft.ListView):
     def __init__(self, df_manager: DFManager, on_selection_changed: callable, settings: SettingsManager):
-        super().__init__(spacing=10, padding=20, auto_scroll=False, expand=True)
+        super().__init__(spacing=10, auto_scroll=False, expand=True)
         self.df_manager = df_manager
         self.records = df_manager.data
         self.selected_refs: list[ft.Ref] = []
@@ -294,6 +296,8 @@ class ListViewTable(ft.ListView):
         self.on_selection_changed(len(self.selected_refs))
 
     def delete_selected(self):
+        if len(self.selected_refs) == 0:
+            return # No selected refs
         rowids = []
         for ref in self.selected_refs:
             if ref.current and ref.current in self.controls:

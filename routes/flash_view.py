@@ -94,7 +94,7 @@ class FlashCardView(ft.Column):
             animate_opacity=ft.Animation(300, "easeInOut"),
             animate_offset=ft.Animation(300, "easeInOut"),
             offset=ft.Offset(0, 0),
-            on_click=self.flip_card,
+            on_click=lambda e: self.flip_card(),
             **self.card_style
         )
 
@@ -124,7 +124,7 @@ class FlashCardView(ft.Column):
             animate_opacity=ft.Animation(300, "easeInOut"),
             animate_offset=ft.Animation(300, "easeInOut"),
             offset=ft.Offset(0.1, 0),
-            on_click=self.flip_card,
+            on_click=lambda e: self.flip_card(),
             **self.card_style
         )
 
@@ -182,13 +182,14 @@ class FlashCardView(ft.Column):
             controls=[
                 ft.ElevatedButton("Repeat", on_click=lambda e: self.next_card(e, new_score=-1), width=80, height=40),
                 ft.ElevatedButton("Hard",   on_click=lambda e: self.next_card(e, new_score=1), width=80, height=40),
-                ft.ElevatedButton("Flip",   on_click=self.flip_card, width=100, height=40),
+                ft.ElevatedButton("Flip",   on_click=lambda e: self.flip_card(), width=100, height=40, icon=ft.Icons.AUTORENEW_ROUNDED),
                 ft.ElevatedButton("Good",   on_click=lambda e: self.next_card(e, new_score=2), width=80, height=40),
                 ft.ElevatedButton("Easy",   on_click=lambda e: self.next_card(e, new_score=3), width=80, height=40),
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             width=500,
-            height=40
+            height=40,
+            disabled=True
         )
 
     def start_game(self, e: ft.ControlEvent):
@@ -207,11 +208,7 @@ class FlashCardView(ft.Column):
         self.next_card(e)
         self.change_view(e, 1)
 
-        # self.df_manager.print_info()
-        # print()
-        # self.df_manager.print_info(self.deck)
-
-    def flip_card(self, e):
+    def flip_card(self):
         if self.side_index not in (1, 2):
             return 
 
@@ -228,18 +225,20 @@ class FlashCardView(ft.Column):
             self.back_view.opacity = 1.0
             self.back_view.offset = ft.Offset(0, 0)
 
-        e.page.update()
+        self.update()
 
     def change_view(self, e: ft.ControlEvent, new_view_index: int):
         views = [self.settings_view, self.front_view, self.back_view, self.end_screen, self.info_view]
         if new_view_index == 1:
             self.front_view.visible = True
             self.back_view.visible = True
-        elif new_view_index == 3:
-            self.save_scores()
+            self.btn_row.disabled = False
         else:
             self.front_view.visible = False
             self.back_view.visible = False
+            self.btn_row.disabled = True
+        if new_view_index == 3:
+            self.save_scores()
 
         current = views[self.side_index]
         current.visible = False
@@ -257,7 +256,7 @@ class FlashCardView(ft.Column):
 
         self.current_card_index += 1
         if self.current_card_index > self.deck_len:
-            if self.side_index == 2: self.flip_card(e)
+            if self.side_index == 2: self.flip_card()
             self.change_view(e, 3)
             return
         
@@ -265,7 +264,7 @@ class FlashCardView(ft.Column):
         
         if self.side_index == 2:
             self.back_view.content.visible = False  
-            self.flip_card(e)
+            self.flip_card()
         
         self.card_elements["card_number"].value = f"Card {self.current_card_index}/{self.deck_len}"
         self.card_elements["card_number_back"].value = f"Card {self.current_card_index}/{self.deck_len}"
