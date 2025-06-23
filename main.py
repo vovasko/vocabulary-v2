@@ -1,23 +1,9 @@
 import flet as ft
+from routes.home_view import HomeView
 from routes.settings_view import SettingsView
 from routes.table_view import TableView
 from routes.flash_view import FlashCardView
 from services.DF_manager import DFManager
-from components.appbar import AppBar
-
-def home_view() -> ft.View:
-    return ft.View(
-        route="/",
-        controls=[
-            ft.Text("Home Page 2.0"),
-            ft.ElevatedButton("Go to Settings", on_click=lambda e: e.page.go("/settings"), icon=ft.Icons.SETTINGS_ROUNDED),
-            ft.ElevatedButton("Go to Table", on_click=lambda e: e.page.go("/table")),
-            ft.ElevatedButton("Go to Flash Cards", on_click=lambda e: e.page.go("/flash"))
-        ],
-        vertical_alignment=ft.MainAxisAlignment.CENTER,
-        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        appbar=AppBar(title="Home Page 2.0").build_home()
-    )
 
 def main(page: ft.Page):
     page.title = "Routing Demo"
@@ -26,12 +12,13 @@ def main(page: ft.Page):
     page.window.height = 650
     page.route_history = ["/"]
     page.df_manager = DFManager()
+    page.bgcolor = ft.Colors.GREY_900
 
     page.fonts = {
-        "Inter":"fonts/Inter-Regular.ttf",
-        "Inter-Bold":"fonts/Inter-Bold.ttf",
-        "Inter-Italic":"fonts/Inter-Italic.ttf",
-        "Inter-SemiBold":"fonts/Inter-SemiBold.ttf"      
+        "Inter":"/fonts/Inter-Regular.ttf",
+        "Inter-Bold":"/fonts/Inter-Bold.ttf",
+        "Inter-Italic":"/fonts/Inter-Italic.ttf",
+        "Inter-SemiBold":"/fonts/Inter-SemiBold.ttf"      
     }
     page.theme = ft.Theme(font_family="Inter")
 
@@ -41,7 +28,7 @@ def main(page: ft.Page):
         page.views.clear()
 
         if page.route == "/":
-            page.views.append(home_view())
+            page.views.append(HomeView().fetch_view())
         elif page.route == "/settings":
             page.views.append(SettingsView().fetch_view())
         elif page.route == "/table":
@@ -56,8 +43,21 @@ def main(page: ft.Page):
         top_view: ft.View = page.views[-1]
         page.go(top_view.route)
 
+    def on_keyboard(e: ft.KeyboardEvent):
+        if e.key == "Escape":
+            if len(page.route_history) > 1:
+                page.route_history.pop()
+                previous_route = page.route_history[-1]
+                page.go(previous_route)
+        elif e.key == "Backspace" and page.route == "/table":
+            page.views[-1].controls[0].content.controls[2].delete_selected()
+        elif e.key in ("Space", " ") and page.route == "/flash":
+            page.views[-1].controls[0].flip_card()
+        # print(f"Key: {e.key}, Shift: {e.shift}, Control: {e.ctrl}, Alt: {e.alt}, Meta: {e.meta}")
+    
+    page.on_keyboard_event = on_keyboard
     page.on_route_change = route_change
     page.on_view_pop = view_pop
     page.go(page.route)
 
-ft.app(target=main)
+ft.app(target=main, assets_dir="assets")
