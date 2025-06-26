@@ -1,7 +1,13 @@
 {
-    "main_lang": "English",
-    "second_lang": "Ukrainian",
-    "examples": 1,
+    "main_lang": {
+        "code": "en",
+        "lang": "English"
+    },
+    "second_lang": {
+        "code": "nn",
+        "lang": "None"
+    },
+    "examples": 0,
     "meanings": 1,
     "columns": {
         "type": true,
@@ -19,36 +25,36 @@
         "second_translation": false,
         "example": false,
         "meaning": false,
-        "score": false
+        "score": true
     },
     "cards_in_deck": "20",
-    "lang_list": [
-        "English",
-        "Ukrainian",
-        "Spanish",
-        "French",
-        "Turkish",
-        "Portuguese",
-        "Italian",
-        "Romanian",
-        "Hungarian",
-        "Polish",
-        "Greek",
-        "Dutch",
-        "Czech",
-        "Swedish",
-        "Danish",
-        "Japanese",
-        "Catalan",
-        "Finnish",
-        "Norwegian",
-        "Basque",
-        "Serbian",
-        "Macedonian",
-        "Slovenian",
-        "Slovak",
-        "Bosnian",
-        "Croatian",
-        "Bulgarian"
-    ]
+    "lang_list": {
+        "uk": "Ukrainian",
+        "en": "English",
+        "es": "Spanish",
+        "fr": "French",
+        "tr": "Turkish",
+        "pt": "Portuguese",
+        "it": "Italian",
+        "ro": "Romanian",
+        "hu": "Hungarian",
+        "pl": "Polish",
+        "el": "Greek",
+        "nl": "Dutch",
+        "cs": "Czech",
+        "sv": "Swedish",
+        "da": "Danish",
+        "ja": "Japanese",
+        "ca": "Catalan",
+        "fi": "Finnish",
+        "no": "Norwegian",
+        "eu": "Basque",
+        "sr": "Serbian",
+        "mk": "Macedonian",
+        "sl": "Slovenian",
+        "sk": "Slovak",
+        "bs": "Bosnian",
+        "hr": "Croatian",
+        "bg": "Bulgarian"
+    }
 }

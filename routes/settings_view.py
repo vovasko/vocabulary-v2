@@ -192,18 +192,23 @@ class SettingsView(ft.Column):
         return controls
     
     def create_lang_selector(self, main: bool) -> ft.Row:
-        lang_var = "main_lang" if main else "second_lang"
+        lang_list = dict(settings.get("lang_list")) # Create main lang list
+        if main: lang_var = "main_lang"
+        else:
+            lang_var = "second_lang"
+            lang_list = {"nn": "None", **lang_list}
+
         def selected(e: ft.ControlEvent):
-            lang_text.value = e.control.data
+            lang_text.value = e.control.data["lang"]
             settings.set(lang_var, e.control.data)
             self.update()
 
-        lang_text = ft.Text(value=settings.get(lang_var), text_align=ft.TextAlign.END)
+        lang_text = ft.Text(value=settings.get(lang_var)["lang"], text_align=ft.TextAlign.END)
         row = ft.Row(
             controls=[
                 lang_text,
                 ft.PopupMenuButton(
-                    items=[ft.PopupMenuItem(text=lang, data=lang, on_click=selected) for lang in settings.get("lang_list")],
+                    items=[ft.PopupMenuItem(text=lang, data={"code":code, "lang":lang}, on_click=selected) for code, lang in lang_list.items()],
                     tooltip="Change Language",
                     height=28,
                     padding=0,
