@@ -3,16 +3,19 @@ from routes.home_view import HomeView
 from routes.settings_view import SettingsView
 from routes.table_view import TableView
 from routes.flash_view import FlashCardView
+from routes.translation_view import TranslationView
 from services.DF_manager import DFManager
 
 def main(page: ft.Page):
-    page.title = "Routing Demo"
+    page.title = "Vocabulary Booster V2"
     page.window.min_width = 700
     page.window.min_height = 650
     page.window.height = 650
     page.route_history = ["/"]
     page.df_manager = DFManager()
+    page.dialog_is_open = False
     page.bgcolor = ft.Colors.GREY_900
+    # page.show_semantics_debugger = True
 
     page.fonts = {
         "Inter":"/fonts/Inter-Regular.ttf",
@@ -35,6 +38,8 @@ def main(page: ft.Page):
             page.views.append(TableView(page.df_manager).fetch_view())
         elif page.route == "/flash":
             page.views.append(FlashCardView(page.df_manager).fetch_view())
+        elif page.route == "/translation":
+            page.views.append(TranslationView(page.df_manager).fetch_view())
         page.update()
         print(page.route_history)
 
@@ -49,7 +54,7 @@ def main(page: ft.Page):
                 page.route_history.pop()
                 previous_route = page.route_history[-1]
                 page.go(previous_route)
-        elif e.key == "Backspace" and page.route == "/table":
+        elif e.key == "Backspace" and page.route == "/table" and not page.dialog_is_open:
             page.views[-1].controls[0].content.controls[2].delete_selected()
         elif e.key in ("Space", " ") and page.route == "/flash":
             page.views[-1].controls[0].flip_card()

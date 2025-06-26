@@ -16,11 +16,6 @@ class HomeView(ft.Column):
         self.create_stats_card()
 
         self.controls = [
-            # ft.ElevatedButton("Go to Settings", on_click=lambda e: e.page.go("/settings"), icon=ft.Icons.SETTINGS_ROUNDED),
-            # ft.Text("Hello from gg", size=30),
-            # ft.Text("Hello from Inter", font_family="Inter", size=30),
-            # ft.Text("Hello from Inter-Italic", font_family="Inter-Italic", size=30),
-            # ft.Button("font", on_click=lambda e: print(e.page.theme)),
             self.word_card,
             self.nav_card,
             self.stats_card
@@ -55,13 +50,9 @@ class HomeView(ft.Column):
         
         self.nav_card = ft.Column(
             controls=[
-                # ft.Container(
-                #     ft.Text(value="Navigation Card"),
-                #     margin=ft.margin.only(74, 12, 0, 0)
-                # ),
                 ft.Container(
                     content=ft.Column([
-                        nav_row(ft.Icons.G_TRANSLATE_ROUNDED, "Translation master", lambda e: print("Translation clicked")),
+                        nav_row(ft.Icons.G_TRANSLATE_ROUNDED, "Translation master", lambda e: e.page.go("/translation")),
                         divider(),
                         nav_row(ft.Icons.TABLE_ROWS_ROUNDED, "Records keeper", lambda e: e.page.go("/table")),
                         divider(),
@@ -127,10 +118,6 @@ class HomeView(ft.Column):
 
         self.stats_card = ft.Column(
             controls=[
-                # ft.Container(
-                #     ft.Text(value="Stats Card"),
-                #     margin=ft.margin.only(74, 12, 0, 0)
-                # ),
                 ft.Container(
                     content=ft.Column([
                         ft.Text("Your Learning Statistics", size=16, weight="bold", color="white"),

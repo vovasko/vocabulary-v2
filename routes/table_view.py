@@ -3,6 +3,7 @@ from services.settings import SettingsManager
 from services.edit_dialog import EditDialog
 from services.DF_manager import DFManager
 from components.appbar import AppBar
+from pandas import DataFrame
 
 class TableView(ft.Column):
     def __init__(self, df_manager: DFManager):
@@ -42,8 +43,8 @@ class TableView(ft.Column):
         )
     
     def create_controls(self):
-        self.appbar = AppBar(title="Table").build()
-        self.table = ListViewTable(self.df_manager, self.update_buttons, self.settings)
+        self.appbar = AppBar(title="Records Keeper").build()
+        self.table = ListViewTable(df_manager=self.df_manager, settings=self.settings, on_selection_changed=self.update_buttons)
         self.delete_btn = ft.ElevatedButton(
             "Delete",
             disabled=True,
@@ -183,25 +184,28 @@ class TableView(ft.Column):
             self.edit_btn.update()
 
 class ListViewTable(ft.ListView):
-    def __init__(self, df_manager: DFManager, on_selection_changed: callable, settings: SettingsManager):
+    def __init__(self, df_manager: DFManager = None, settings: SettingsManager = None, records: DataFrame = None, on_selection_changed: callable = None):
         super().__init__(spacing=10, auto_scroll=False, expand=True)
         self.df_manager = df_manager
-        self.records = df_manager.data
+        self.records = df_manager.data if self.df_manager != None else records
         self.selected_refs: list[ft.Ref] = []
         self.selected_filters: tuple[str, str|list] = ()
         self.on_selection_changed = on_selection_changed
         self.settings = settings
         self.last_sort = {}
-        self.build_table()
+        if isinstance(self.records, DataFrame): self.build_table()
 
     def build_table(self):
         self.controls.clear()
         self.last_sort = {"col": None, "asc": False}
         self.header = []
-        self.column_flexes_dict = { "type": 2, "german": 4, "translation": 6,
+        self.column_flexes_dict = {"type": 2, "german": 4, "translation": 6,
             "second_translation": 6, "example": 8, "meaning": 8, "score": 1 }
-        for col, value in self.settings.get("columns").items():
-            if value: self.header.append(col)
+        if self.settings != None:
+            for col, value in self.settings.get("columns").items():
+                if value: self.header.append(col)
+        else: 
+            self.header = list(self.records.columns)
 
         self.controls.append(self._build_row(self.header, is_header=True))
         self._build_content()
@@ -223,8 +227,9 @@ class ListViewTable(ft.ListView):
         }
 
         if is_header and isinstance(data, list):
+            actions_table = self.df_manager != None
             text_data = []
-            for i, item in enumerate(data):
+            for item in data:
                 match item:
                     case "second_translation": text_data.append("Translation 2")
                     case "score": text_data.append("Pt")
@@ -234,27 +239,25 @@ class ListViewTable(ft.ListView):
                 ft.Container(
                     content=ft.Text(
                         value=col_text,                                        
-                        text_align=ft.TextAlign.CENTER,
+                        text_align="center" if actions_table else "start",
                         data={"col_name": col_name},
                         **text_style,
                     ),
-                    expand=self.column_flexes_dict[col_name],
-                    ink=True,
+                    expand=self.column_flexes_dict.get(col_name, 2),
+                    ink=True if actions_table else False,
                     animate=ft.Animation(200, "easeInOut"),
-                    on_click=lambda e: self.sort(e.control.content.data["col_name"]),
+                    on_click=lambda e: self.sort(e.control.content.data["col_name"]) if actions_table else None,
                     border_radius=12,
                     tooltip=f"Sort {col_text}"
                 )
                 for col_text, col_name in zip(text_data, data)
             ]
         else:
-            ref = ft.Ref[ft.Text]()
             controls_list = [
                 ft.Text(
                     value=getattr(data, col_name),
-                    expand=self.column_flexes_dict[col_name],
-                    ref=ref,
-                    data={"ref":ref, "col":col_name},
+                    expand=self.column_flexes_dict.get(col_name, 2),
+                    data={"col":col_name},
                     **text_style
                 )
                 for col_name in self.header
@@ -275,8 +278,9 @@ class ListViewTable(ft.ListView):
             ref=ref,
             data={"ref": ref,"rowid": data.Index} if not is_header else None,
         )
-        if not is_header:
+        if not is_header and self.df_manager != None:
             row.on_click = self.on_container_click
+            row.on_long_press = self.on_container_long_press
         return row
 
     def on_container_click(self, e: ft.ControlEvent):
@@ -293,7 +297,13 @@ class ListViewTable(ft.ListView):
             container.bgcolor = ft.Colors.LIGHT_BLUE_100
 
         container.update()
-        self.on_selection_changed(len(self.selected_refs))
+        # print(f"{len(self.selected_refs)=}")
+        if self.on_selection_changed: self.on_selection_changed(len(self.selected_refs))
+
+    def on_container_long_press(self, e: ft.ControlEvent):
+        container = e.control
+        dialog = EditDialog(container, self.save_updated_record) # Call Edit dialog
+        dialog.open_dialog(e)
 
     def delete_selected(self):
         if len(self.selected_refs) == 0:
@@ -305,27 +315,27 @@ class ListViewTable(ft.ListView):
                 rowids.append(ref.current.data["rowid"])
         self.selected_refs.clear()
         self.update()
-        self.on_selection_changed(0)
+        if self.on_selection_changed: self.on_selection_changed(0)
         self.df_manager.delete_rows(rowids)
 
     def call_dialog(self, e, mode: str = "edit"):
         # mode = [edit, new]
-        print(f"Dialog called")
         if mode == "new": 
             dialog = EditDialog(None, self.save_new_record) # Call New dialog
         else:
             dialog = EditDialog(self.selected_refs[0].current, self.save_updated_record) # Call Edit dialog
         
-        if self not in e.page.overlay:
-            e.page.overlay.append(dialog)
-        dialog.open = True
-        e.page.update()
+        dialog.open_dialog(e)
 
-    def save_updated_record(self):
-        container = self.selected_refs[0].current
+    def save_updated_record(self, edited_container_ref: ft.Ref[ft.Container]):
+        ref = edited_container_ref
+        if ref in self.selected_refs:
+            self.selected_refs.remove(ref)
+            if self.on_selection_changed: self.on_selection_changed(len(self.selected_refs))
+        
+        container = ref.current
+        container.update()
         self.df_manager.update_record(container)
-        self.selected_refs.clear()
-        self.on_selection_changed(0)
     
     def save_new_record(self, new_row: dict):
         self.df_manager.create_new_record(new_row)
@@ -338,6 +348,8 @@ class ListViewTable(ft.ListView):
         self.update()
 
     def sort(self, col_name: str):
+        if self.records.shape[0] == 0: return # no records to sort
+            
         if self.last_sort["col"] == col_name:
             self.last_sort["asc"] = not self.last_sort["asc"]
         else: 
