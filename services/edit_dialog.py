@@ -97,12 +97,16 @@ class EditDialog(ft.AlertDialog):
 
     def open_dialog(self, e: ft.ControlEvent):
         if self not in e.page.overlay:
+            e.page.overlay.clear()
             e.page.overlay.append(self)
         self.open = True
+        e.page.dialog_is_open = True
         e.page.update()
+        print(f"Dialog called")
 
     def close_dlg(self, e: ft.ControlEvent):
         self.open = False
+        e.page.dialog_is_open = False
         e.page.update()
 
     def save_data(self, e: ft.ControlEvent):
@@ -126,9 +130,8 @@ class EditDialog(ft.AlertDialog):
             return False
 
         self.original_container.bgcolor = ft.Colors.GREY
-        self.original_container.update()
         if self.on_save:
-            self.on_save()
+            self.on_save(self.original_container.data["ref"])
         return True
 
     def save_new_row(self) -> bool: # Returns save confirmation

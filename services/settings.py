@@ -19,7 +19,13 @@ class SettingsManager:
             json.dump(self._data, f, indent=4)
 
     def get(self, key, default=None):
-        return self._data.get(key, default)
+        parts = key.split(".")
+        d = self._data
+        for part in parts:
+            if isinstance(d, dict) and part in d:
+                d = d[part]
+            else: return default
+        return d
 
     def set(self, key, value):
         parts = key.split(".")

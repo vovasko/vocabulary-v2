@@ -1,6 +1,6 @@
 import sqlite3
 from pandas import DataFrame, read_sql_query
-import re
+from re import search, IGNORECASE
 from pathlib import Path
 
 class DBManager:
@@ -160,7 +160,7 @@ class DBManager:
     def count_rows(self, mode: str = "all") -> int:
         select_query = self.fetch_data(mode, just_return_query=True)
 
-        match = re.search(r'\bFROM\b', select_query, re.IGNORECASE)
+        match = search(r'\bFROM\b', select_query, IGNORECASE)
         if match:
             from_index = match.start()
             count_query = 'SELECT COUNT(*) ' + select_query[from_index:]

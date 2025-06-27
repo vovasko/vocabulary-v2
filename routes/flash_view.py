@@ -17,7 +17,7 @@ class FlashCardView(ft.Column):
 
         self.settings = SettingsManager()
         self.df_manager = df_manager
-        self.appbar = AppBar(title="Flash Cards").build()
+        self.appbar = AppBar(title="Flash Cards Creator").build()
 
         self.card_style = {
             "alignment" : ft.alignment.center,        
@@ -189,7 +189,8 @@ class FlashCardView(ft.Column):
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             width=500,
             height=40,
-            disabled=True
+            disabled=True,
+            opacity=0.0
         )
 
     def start_game(self, e: ft.ControlEvent):
@@ -233,10 +234,12 @@ class FlashCardView(ft.Column):
             self.front_view.visible = True
             self.back_view.visible = True
             self.btn_row.disabled = False
+            self.btn_row.opacity = 1.0
         else:
             self.front_view.visible = False
             self.back_view.visible = False
             self.btn_row.disabled = True
+            self.btn_row.opacity = 0.0
         if new_view_index == 3:
             self.save_scores()
 

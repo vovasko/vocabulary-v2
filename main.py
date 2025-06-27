@@ -16,6 +16,7 @@ def main(page: ft.Page):
     page.dialog_is_open = False
     page.bgcolor = ft.Colors.GREY_900
     # page.show_semantics_debugger = True
+    page.home_view = HomeView(page.df_manager)
 
     page.fonts = {
         "Inter":"/fonts/Inter-Regular.ttf",
@@ -31,7 +32,7 @@ def main(page: ft.Page):
         page.views.clear()
 
         if page.route == "/":
-            page.views.append(HomeView().fetch_view())
+            page.views.append(page.home_view.fetch_view())
         elif page.route == "/settings":
             page.views.append(SettingsView().fetch_view())
         elif page.route == "/table":

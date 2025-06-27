@@ -12,6 +12,9 @@ class TranslationError(Exception):
         self.found = found
         super().__init__(self.message)
 
+class ConnectionError(Exception):
+    pass
+
 class Netzverb: 
     # base_url = "https://www.verbformen.de/?w="
     base_url = "https://www.verben.de/?w="
@@ -39,11 +42,11 @@ class Netzverb:
         return self._fetch_response(request_url)
 
     @classmethod
-    def _fetch_response(self, request_url):
+    def _fetch_response(self, request_url, sleep_time: int = 1):
         try:
             response = requests.get(request_url)
             response.raise_for_status()  # Raise HTTPError for bad responses
-            time.sleep(1)
+            time.sleep(sleep_time)
             return BeautifulSoup(response.content, "html.parser")
         except requests.exceptions.RequestException as e:
             raise TranslationError(f"Failed to fetch URL")
@@ -59,9 +62,9 @@ class Netzverb:
         if not present: raise TranslationError("Word not found on Netzverb", False)
 
     @classmethod
-    def get_translation(self, soup: BeautifulSoup, language):
-        if not soup: return None
-        dd = soup.find("dd", lang=language)
+    def get_translation(self, soup: BeautifulSoup, lang_code: str):
+        if not soup or lang_code == "nn": return None
+        dd = soup.find("dd", lang=lang_code)
         if not dd: return None
         span = dd.find_all("span")[1]
         if not span: return None
@@ -70,7 +73,7 @@ class Netzverb:
     
     @classmethod
     def get_example(self, soup: BeautifulSoup, n: int):
-        if soup == None: return None
+        if soup == None or n == 0: return None
         examples = []
         # Find all <a> tags with href attributes
         anchor_tags = soup.find_all("a", href=True)
@@ -84,7 +87,7 @@ class Netzverb:
     
     @classmethod
     def get_meaning(self, soup: BeautifulSoup, n: int): # class=rBox rBoxWht
-        if soup == None: return None
+        if soup == None or n == 0: return None
         list_prefixes = ("a.", "b.", "c.", "d.", "e.")
         meanings = []
         sections = soup.find_all("section", class_="rBox rBoxWht")
@@ -118,6 +121,49 @@ class Netzverb:
         part = span.find_all("span", attrs={'title': "Verb"})
         if part:
             return(part[0].text.upper())
+    
+    @classmethod
+    def get_random_words(self) -> list[str] | None:
+        url_noun = "https://www.verbformen.com/declension/nouns/Abend.htm"
+        # url_adj = "https://www.verbformen.com/declension/adjectives/hold.htm"
+        try: soup = self._fetch_response(url_noun, sleep_time=0)
+        except TranslationError as _: return None
+        
+        # Parse response
+        nav = soup.find_all("nav", class_ = "rBox rBoxWht")[-1]
+        p = nav.find_all("p")[-1]
+        list_a = p.find_all("a")
+        random_words = []
+        for a in list_a: random_words.append(a.text)
+        return random_words
+    
+    @classmethod
+    def get_noun_data(self, noun: str, settings_) -> dict | None:
+        try: soup = self.get_noun_html_response(noun)
+        except TranslationError as _: return None
+
+        settings = settings_
+        # check if response is alright and has translation
+        translation = self.get_translation(soup, settings["main_lang"]["code"])
+        if translation == None: return None
+
+        base_form = self.get_word(soup)
+        type_and_word = base_form.split(sep=',')
+        if len(type_and_word) > 2:
+            type_and_word = [type_and_word[0], type_and_word[2]]
+
+        new_word = {
+            "type"  :type_and_word[1].strip(),
+            "german":type_and_word[0].strip(),
+            "translation":translation,
+            "second_translation": self.get_translation(soup, settings["second_lang"]["code"]),
+            "example": self.get_example(soup, settings["examples"]),
+            "meaning": self.get_meaning(soup, settings["meanings"]),
+            "score": 0,
+        }
+
+        return new_word
+        
 
 class Translator:
     def __init__(self):
