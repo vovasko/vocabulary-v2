@@ -14,8 +14,8 @@
         "german": true,
         "translation": true,
         "second_translation": true,
-        "example": true,
-        "meaning": false,
+        "example": false,
+        "meaning": true,
         "score": true
     },
     "flashcards": {
@@ -56,5 +56,18 @@
         "bs": "Bosnian",
         "hr": "Croatian",
         "bg": "Bulgarian"
+    },
+    "day_word": {
+        "date": "2025-06-27",
+        "saved": true,
+        "data": {
+            "type": "das",
+            "german": "Flusstal",
+            "translation": "river valley, stream valley",
+            "second_translation": null,
+            "example": null,
+            "meaning": "<-s,\u00a8-er> Tal mit einem Fluss",
+            "score": 0
+        }
     }
 }
