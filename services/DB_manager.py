@@ -137,10 +137,7 @@ class DBManager:
                                         HAVING COUNT(*) > 1
                                     ); """
                 case "nulls"     : select_query += """
-                                    WHERE translation IS NULL
-                                    OR second_translation IS NULL
-                                    OR example IS NULL
-                                    OR meaning IS NULL;
+                                    WHERE translation IS NULL;
                                     """
                 case "new"       : select_query += "WHERE score = 0;"
                 case "repeat"    : select_query += "WHERE score IN (-1, 1);"
@@ -200,6 +197,7 @@ class DBManager:
         if filter_tuple[0] in ("type", "score"):
             values = ", ".join(f"'{elem}'" for elem in filter_tuple[1])
             select_query += f"WHERE {filter_tuple[0]} IN ({values});" 
+
         if filter_tuple[0] in ("TYPE"):
             values = ""
             other_type = ""
@@ -209,8 +207,7 @@ class DBManager:
                     case "verb"     : values += "'VERB', 'AUX'," 
                     case "adjective": values += "'ADJ', 'ADP', 'ADV',"
                     case "other"    : other_type += "WHERE type NOT IN ('NOUN', 'VERB', 'ADJ', 'PROPN', 'AUX', 'ADP', 'ADV', 'der', 'die', 'das')"
-                    case _          : pass # all
-            
+                    case _          : pass # all            
             if other_type:
                 select_query += other_type
                 if values: # if len(values) > 0
@@ -219,6 +216,17 @@ class DBManager:
             elif values: select_query += f"WHERE type IN ({values[:-1]});"
             else: select_query += ';'
 
-            
+        if filter_tuple[0] in ("special"):
+            where_clause = ""
+            for mode in filter_tuple[1]:
+                if where_clause: where_clause += " OR "
+                match mode:
+                    case "duplicates": where_clause += """
+                                        (type, german) IN (
+                                        SELECT type, german FROM vocabulary
+                                        GROUP BY type, german
+                                        HAVING COUNT(*) > 1 )"""
+                    case "nulls"     : where_clause += "translation IS NULL"
+            select_query += "WHERE " + where_clause
 
         return select_query

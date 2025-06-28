@@ -38,65 +38,75 @@ class TableView(ft.Column):
                     expand=True,
                 )
             ],
-            floating_action_button=self.add_btn,
             padding=ft.padding.only(left=30, right=30, top=10, bottom=10)
         )
     
     def create_controls(self):
         self.appbar = AppBar(title="Records Keeper").build()
         self.table = ListViewTable(df_manager=self.df_manager, settings=self.settings, on_selection_changed=self.update_buttons)
-        self.delete_btn = ft.ElevatedButton(
+        
+        def delete_hover(e: ft.ControlEvent):
+            if e.control.bgcolor == ft.Colors.RED_300: e.control.bgcolor = None
+            else: e.control.bgcolor = ft.Colors.RED_300
+            e.control.update()
+
+        def color_wrapper(e: ft.ControlEvent, function: callable, *args, **kwargs):
+            if e.control.bgcolor == ft.Colors.GREEN_300: e.control.bgcolor = None
+            else: e.control.bgcolor = ft.Colors.GREEN_300
+            e.control.update()
+            if function: function(*args, **kwargs)
+        
+        self.delete_btn = ft.FilledButton(
             "Delete",
             disabled=True,
             on_click=lambda e: self.table.delete_selected(),
-            bgcolor=ft.Colors.RED_300,
             icon=ft.Icons.DELETE_FOREVER_ROUNDED,
-            width=100
+            expand=True,
+            on_hover=delete_hover
         )
-        self.edit_btn = ft.ElevatedButton(
+        self.edit_btn = ft.FilledButton(
             "Edit",
             disabled=True,
             on_click=lambda e: self.table.call_dialog(e),
-            bgcolor=ft.Colors.GREY_500,
             icon=ft.Icons.EDIT_ROUNDED,
-            width=100
+            expand=True
         )
-        self.sort_btn = ft.ElevatedButton(
-            "Sort",
-            on_click=lambda e: self.table.sort(col_name="index"),
-            bgcolor=ft.Colors.GREY_500,
+        self.add_btn = ft.FilledButton(
+            "Add word",            
+            on_click=lambda e: self.table.call_dialog(e, mode="new"),
+            icon=ft.Icons.ADD, 
+            expand=True
+        )
+        self.sort_btn = ft.FilledButton(
+            "Old first",
+            on_click=lambda e: color_wrapper(e, self.table.sort_index),
             icon=ft.Icons.SORT_ROUNDED,
-            width=100
+            expand=True
         )
-        self.filter_btn = ft.ElevatedButton(
+        self.filter_btn = ft.FilledButton(
             "Filter",
-            on_click=lambda e: self.filter_toggle(),
-            bgcolor=ft.Colors.GREY_500,
+            on_click=lambda e: color_wrapper(e, self.filter_toggle),
             icon=ft.Icons.FILTER_ALT_ROUNDED,
-            width=100
+            expand=True
         )
         self.btn_row = ft.Row(
             controls=[
                 self.delete_btn,
                 self.edit_btn,
+                self.add_btn,
                 self.sort_btn,
                 self.filter_btn
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN
         )
-        self.add_btn = ft.FloatingActionButton(
-            icon=ft.Icons.ADD, 
-            on_click=lambda e: self.table.call_dialog(e, mode="new"),
-            tooltip="Add new word",
-        )
 
     def create_filter_controls(self):
         self.filter_dropdown = ft.Dropdown(
             options=[
-                ft.DropdownOption("All"),
-                ft.DropdownOption("Nouns"), 
                 ft.DropdownOption("Type"),
+                ft.DropdownOption("Nouns"), 
                 ft.DropdownOption("Score"),
+                ft.DropdownOption("Problematic"),
             ], 
             on_change=self.on_filter_changed,
             border_color=ft.Colors.GREY
@@ -128,18 +138,6 @@ class TableView(ft.Column):
         self.table.selected_filters = ()
 
         match selected:
-            case "All": 
-                self.table.selected_filters = ()
-                self.table.filter_selected()
-            case "Nouns":
-                for chip in ["der", "die", "das"]:
-                    self.filter_row.controls.append(
-                        ft.Chip(
-                            label=ft.Text(chip),
-                            on_select=chip_selected,
-                            data={"column": "type", "value": chip}
-                        )
-                    )
             case "Type":
                 for chip in ["Noun", "Verb", "Adjective", "Other"]:
                     self.filter_row.controls.append(
@@ -147,6 +145,15 @@ class TableView(ft.Column):
                             label=ft.Text(chip),
                             on_select=chip_selected,
                             data={"column": "TYPE", "value": chip.lower()}
+                        )
+                    )
+            case "Nouns":
+                for chip in ["der", "die", "das"]:
+                    self.filter_row.controls.append(
+                        ft.Chip(
+                            label=ft.Text(chip),
+                            on_select=chip_selected,
+                            data={"column": "type", "value": chip}
                         )
                     )
             case "Score":
@@ -158,13 +165,22 @@ class TableView(ft.Column):
                             data={"column": "score", "value": chip}
                         )
                     )
+            case "Problematic":
+                for chip in ["Duplicates", "Nulls"]:
+                    self.filter_row.controls.append(
+                        ft.Chip(
+                            label=ft.Text(chip),
+                            on_select=chip_selected,
+                            data={"column": "special", "value": chip.lower()}
+                        )
+                    )
         self.rows_count_txt = ft.Text(f"rows: {self.table.records.shape[0]}", expand=True, text_align="end")
         self.filter_row.controls.append(self.rows_count_txt)
         self.filter_row.update() 
 
     def filter_toggle(self):
         self.filter_row.controls = [self.filter_dropdown]
-        self.filter_dropdown.value = "All"
+        self.filter_dropdown.value = "Type"
         self.on_filter_changed()
         self.filter_row.visible = not self.filter_row.visible
                 
@@ -175,6 +191,7 @@ class TableView(ft.Column):
     
     def update_buttons(self, selected_count: int):
         self.delete_btn.disabled = selected_count == 0
+        self.delete_btn.bgcolor = None
         self.delete_btn.update()
         if selected_count == 1:
             self.edit_btn.disabled = False
@@ -185,7 +202,7 @@ class TableView(ft.Column):
 
 class ListViewTable(ft.ListView):
     def __init__(self, df_manager: DFManager = None, settings: SettingsManager = None, records: DataFrame = None, on_selection_changed: callable = None):
-        super().__init__(spacing=10, auto_scroll=False, expand=True)
+        super().__init__(spacing=5, auto_scroll=False, expand=True)
         self.df_manager = df_manager
         self.records = df_manager.data if self.df_manager != None else records
         self.selected_refs: list[ft.Ref] = []
@@ -193,6 +210,7 @@ class ListViewTable(ft.ListView):
         self.on_selection_changed = on_selection_changed
         self.settings = settings
         self.last_sort = {}
+        self.sort_old_first = False
         if isinstance(self.records, DataFrame): self.build_table()
 
     def build_table(self):
@@ -210,8 +228,9 @@ class ListViewTable(ft.ListView):
         self.controls.append(self._build_row(self.header, is_header=True))
         self._build_content()
     
-    def _build_content(self):
+    def _build_content(self, sorted = False):
         self.controls = [self.controls[0]] # Delete all rows except header
+        if not sorted: self.records.sort_index(inplace=True, ascending=self.sort_old_first)
 
         for row in self.records.itertuples():
             ref = ft.Ref[ft.Container]()
@@ -294,7 +313,7 @@ class ListViewTable(ft.ListView):
             container.bgcolor = ft.Colors.GREY
         else:
             self.selected_refs.append(ref)
-            container.bgcolor = ft.Colors.LIGHT_BLUE_100
+            container.bgcolor = ft.Colors.INDIGO_900
 
         container.update()
         # print(f"{len(self.selected_refs)=}")
@@ -349,12 +368,13 @@ class ListViewTable(ft.ListView):
 
     def sort(self, col_name: str):
         if self.records.shape[0] == 0: return # no records to sort
+        if col_name != "index" and self.last_sort["col"] == "index" and  self.last_sort["asc"] == True: return
             
         if self.last_sort["col"] == col_name:
             self.last_sort["asc"] = not self.last_sort["asc"]
         else: 
             self.last_sort["col"] = col_name
-            self.last_sort["asc"] = True if col_name != "index" else False
+            self.last_sort["asc"] = True
         
         if col_name == "index":
             self.records.sort_index(inplace=True, ascending=self.last_sort["asc"])
@@ -363,8 +383,15 @@ class ListViewTable(ft.ListView):
         else:
             self.records.sort_values(by=col_name, inplace=True, ascending=self.last_sort["asc"], key=lambda col: col.str.lower())
         
-        self._build_content()
+        if self.on_selection_changed: self.on_selection_changed(0)
+        self.selected_refs.clear()
+        
+        self._build_content(sorted=True)
         self.update()
+
+    def sort_index(self):
+        self.sort_old_first = not self.sort_old_first
+        self.sort("index")
 
     def filter_selected(self):
         if not self.selected_filters or not len(self.selected_filters[1]):
