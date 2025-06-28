@@ -24,8 +24,15 @@ def main(page: ft.Page):
         "Inter-Italic":"/fonts/Inter-Italic.ttf",
         "Inter-SemiBold":"/fonts/Inter-SemiBold.ttf"      
     }
-    page.theme = ft.Theme(font_family="Inter")
-
+    page.theme = ft.Theme(
+        font_family="Inter",
+        icon_button_theme=ft.IconButtonTheme(
+            foreground_color=ft.Colors.WHITE70,
+            hover_color=ft.Colors.WHITE10,
+            disabled_foreground_color=ft.Colors.GREY
+            )
+        )
+    
     def route_change(e: ft.RouteChangeEvent):
         if page.route_history[-1] != page.route:
             page.route_history.append(page.route)

@@ -8,8 +8,6 @@ class RefreshButton(ft.IconButton):
         super().__init__(
             icon=ft.Icons.REFRESH_ROUNDED,
             icon_size=size,
-            icon_color=ft.Colors.WHITE70,
-            hover_color=ft.Colors.WHITE10,
             tooltip="Refresh",
             rotate=0,
             animate_rotation=ft.Animation(500, "easeInOut"),
@@ -19,6 +17,7 @@ class RefreshButton(ft.IconButton):
     def _handle_click(self, e):
         self._rotation += 6.3
         self.rotate = self._rotation
+        self.disabled = True
         self.update()
         if self._external_on_click:
             self._external_on_click(e)

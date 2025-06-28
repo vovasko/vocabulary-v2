@@ -81,13 +81,15 @@ class HomeView(ft.Column):
             e.control.update()
 
         def on_refresh(e: ft.ControlEvent):
+            # self.refresh_btn.disabled = True
+            # self.refresh_btn.update()
             self.day_word.get_word_data() # get new word
             self.word_card_refs["german"].current.value = get_display_word()
             self.word_card_refs["translation"].current.value =  self.day_word.word_data["translation"]
             self.word_card_refs["add_btn"].current.selected = False
             self.word_card_refs["add_btn"].current.disabled = False
+            self.refresh_btn.disabled = False
             self.word_card.update()
-            print(self.day_word.word_data)
 
         def get_display_word():
             if self.day_word.word_data["type"] in ("der", "die", "das"):
@@ -99,13 +101,13 @@ class HomeView(ft.Column):
             "translation": ft.Ref[ft.Text](),
             "add_btn": ft.Ref[ft.Chip](),
         }
-        
+        self.refresh_btn = RefreshButton(on_refresh)
         self.word_card = ft.Container(
             content=ft.Column([                
                 ft.Row([
                     ft.Row(expand=True), # Filler
                     ft.Row([ft.Text("Word of the Day", size=16, weight="bold", color="white")], alignment="center", expand=True),
-                    ft.Row([RefreshButton(on_refresh)], alignment="end", expand=True)
+                    ft.Row([self.refresh_btn], alignment="end", expand=True)
                 ], alignment="center"),
                 ft.Container(height=10), # spacing
                 ft.Text(get_display_word(), size=28, weight="bold", color="white", ref=self.word_card_refs["german"]),

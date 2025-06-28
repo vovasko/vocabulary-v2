@@ -24,8 +24,8 @@ class DayWord():
             self.word_data = None
             self.saved = False
             while self.word_data == None:
-                print("Getting new word")
                 word = choice(words) # choose random word
+                print(f"Getting info for {word}")
                 self.word_data = Netzverb.get_noun_data(word, self.settings._data)
             self.save_word()
             print("New word saved to settings")
