@@ -6,6 +6,7 @@ from services.translator import Translator
 from routes.table_view import ListViewTable
 import pandas as pd
 import threading
+from re import split
 
 class TranslationView(ft.Column):
     def __init__(self, df_manager: DFManager):
@@ -15,22 +16,16 @@ class TranslationView(ft.Column):
         self.df_manager = df_manager
         self.translator = Translator()
 
-        # self.input_data = pd.DataFrame()
         self.table = ListViewTable(records=self.translator.data)
         self.progress_bar = ft.ProgressBar(visible=False)
         self.create_input_row()
         # self.create_filepicker()
 
         self.controls = [
-            # ft.ElevatedButton("check dialog", on_click=lambda _: self.open_dialog(success=True, data={
-            #     "success_count": 1,
-            #     "words_count"  : 2,
-            #     "failed_words" : ["auto ...", "baby ...", "Man ..."]
-            # })),
             self.input_row,
             self.progress_bar,
-            self.table,
-            # self.file_picker
+            self.bulk_input_field,
+            self.table
         ]
 
         self.dialog = ft.AlertDialog(
@@ -49,7 +44,7 @@ class TranslationView(ft.Column):
         return ft.View(
             route="/translation",
             controls=[self],
-            vertical_alignment=ft.MainAxisAlignment.CENTER,
+            vertical_alignment=ft.MainAxisAlignment.START,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             appbar=AppBar(title="Translation Master").build(),
             padding=ft.padding.only(left=30, right=30, top=10, bottom=10),
@@ -116,20 +111,6 @@ class TranslationView(ft.Column):
         e.page.update()
 
     def create_input_row(self):
-        def change_layout(e: ft.ControlEvent):
-            if e.control.selected: # File input mode
-                self.input_field.label = "File path"
-                self.input_field.disabled = True
-                self.action_btn.disabled= True
-                self.action_btn.text = "Select File"
-                self.action_btn.on_click = lambda _: self.file_picker.pick_files(allow_multiple=False)
-            else: # Word input mode
-                self.input_field.label = "Input word"
-                self.input_field.disabled = False
-                self.action_btn.text = "Add"
-                self.action_btn.on_click = self.add_to_input
-            self.input_row.update()
-        
         def input_len_check(e: ft.ControlEvent):
             if len(e.control.value) > 0:
                 self.action_btn.disabled = False
@@ -138,56 +119,108 @@ class TranslationView(ft.Column):
 
         self.input_field = ft.TextField(
             label="Input word",
-            on_change=input_len_check
+            on_change=input_len_check,
+            expand=True,
+            data={"row_ref":ft.Ref[ft.Row]()}
         )
         self.action_btn = ft.ElevatedButton(
             text="Add",
+            icon=ft.Icons.ADD_ROUNDED,
             on_click=self.add_to_input,
-            disabled=True
+            disabled=True,
+            width=80,
+            height=40
         )
         self.translate_btn = ft.ElevatedButton(
             text="Translate", 
             icon=ft.Icons.G_TRANSLATE_ROUNDED, 
             disabled=True,
-            on_click=self.translate
+            on_click=self.translate,
+            width=120,
+            height=40
+        )
+        self.layout_btn = ft.Checkbox(
+            "Bulk Insert",
+            active_color=ft.Colors.GREEN_300,
+            on_change=self.change_layout,
+            splash_radius=0,
+            check_color=ft.Colors.BLACK87
+        )
+
+        # Temporary - while file picker isn't working
+        self.bulk_input_field = ft.TextField(
+            label="Paste multiple words",
+            multiline=True,
+            min_lines=1,
+            max_lines=10,
+            visible=False,
+            expand=True,
+            on_change=input_len_check
         )
 
         self.input_row = ft.Row(
             alignment=ft.MainAxisAlignment.CENTER,
             spacing=20,
             controls=[
-                self.translate_btn,
-                self.input_field,
-                self.action_btn,
-                # ft.Chip(
-                #     label=ft.Text("File Input"), 
-                #     show_checkmark=False, 
-                #     on_select=change_layout,
-                # ),
+                ft.Row([self.translate_btn], expand=True, alignment="end"),
+                ft.Row([self.input_field], expand=True, alignment="center", ref=self.input_field.data["row_ref"]),
+                ft.Row([self.action_btn, self.layout_btn], expand=True, alignment="start", spacing=15),                
             ]
         )
 
-    def create_filepicker(self): # Not working because of ft.FilePicker
-        def on_file_picked(e: ft.FilePickerResultEvent):
-            if e.files:
-                self.input_field.label = f"Picked file: {e.files[0].name}"
-                e.page.update()
-
-        self.file_picker = ft.FilePicker(on_result=on_file_picked)
+    # def create_filepicker(self): # Not working because of ft.FilePicker
+        # def on_file_picked(e: ft.FilePickerResultEvent):
+        #     if e.files:
+        #         self.input_field.label = f"Picked file: {e.files[0].name}"
+        #         e.page.update()
+        # self.file_picker = ft.FilePicker(on_result=on_file_picked)
     
+    def change_layout(self, e: ft.ControlEvent = None):
+        # if e.control.selected: # File input mode # === Logic for file picker === 
+        #     self.input_field.label = "File path"
+        #     self.input_field.disabled = True
+        #     self.action_btn.disabled= True
+        #     self.action_btn.text = "Select File"
+        #     self.action_btn.on_click = lambda _: self.file_picker.pick_files(allow_multiple=False)
+        # else: # Word input mode
+        #     self.input_field.label = "Input word"
+        #     self.input_field.disabled = False
+        #     self.action_btn.text = "Add"
+        #     self.action_btn.on_click = self.add_to_input
+        # self.input_row.update()
+
+        self.input_field.data["row_ref"].current.visible = not self.input_field.data["row_ref"].current.visible
+        self.bulk_input_field.visible = not self.bulk_input_field.visible
+        
+        self.input_field.value = ""
+        self.bulk_input_field.value = ""
+        self.action_btn.disabled = True
+        self.update()
+
     def call_filepicker(self, e: ft.ControlEvent): # Not working because of ft.FilePicker
         self.page.overlay.append(self.file_picker)
         self.file_picker.pick_files(allow_multiple=False)
         self.page.update()
 
     def add_to_input(self, e: ft.ControlEvent):
-        self.translator.input_data = pd.Series([self.input_field.value])
+        input_data = []
+        if not self.bulk_input_field.visible: input_data.append(self.input_field.value)
+        else: # Bulk input scenario
+            raw_input = self.bulk_input_field.value
+            # Split by multiple separators: comma, semicolon, newline, tab, space
+            words = split(r"[,\n;\t]+", raw_input)
+            # Clean up whitespace and remove empty strings
+            input_data = [w.strip() for w in words if w.strip()]
+            print("Parsed words:", input_data)
+
+        self.translator.input_data = pd.Series(input_data)
         self.translator.clean_data()
         
         # Clear input field
         self.input_field.value = ""
+        self.bulk_input_field.value = ""
         self.action_btn.disabled = True
-        self.input_row.update()
+        self.update()
         
         # Enable translate button
         if self.translator.data.shape[0] > 0: 
