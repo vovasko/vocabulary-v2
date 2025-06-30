@@ -61,3 +61,6 @@ class DFManager():
 
     def fetch_df(self, mode: str, filters: tuple[str, str|list] = None) -> DataFrame:
         return self.db.to_dataframe(mode, filters=filters)
+    
+    def count_rows(self, mode: str = "all"):
+        return self.db.count_rows(mode)

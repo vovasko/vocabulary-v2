@@ -1,5 +1,6 @@
 from services.settings import SettingsManager
 from services.translator import Netzverb
+from services.DF_manager import DFManager
 
 from datetime import datetime
 from random import choice
@@ -51,3 +52,41 @@ class DayWord():
         self.saved = True
         self.settings.set("day_word.saved", self.saved)
         self.settings.save()
+
+
+class Statistics():
+    def __init__(self, df_manager: DFManager):
+        self.df_manager = df_manager
+
+        self.words_count = self.df_manager.count_rows("all")
+        self.duplicates = self.df_manager.count_rows("duplicates")
+        self.nulls = self.df_manager.count_rows("nulls")
+        self.new = self.df_manager.count_rows("new")
+        self.repeat = self.df_manager.count_rows("repeat")
+        self.learnt = self.df_manager.count_rows("learnt")
+        self.nouns = self.df_manager.count_rows("nouns")
+        self.verbs = self.df_manager.count_rows("verbs")
+        self.adjectives = self.df_manager.count_rows("adjectives")
+        self.other = self.df_manager.count_rows("other")
+
+        self.bad_vals_flag = bool(self.duplicates or self.nulls)
+
+    def get_stats(self, mode: str) -> list[dict]:
+        # Mode - type, score, bad_vals
+        match mode:
+            case "type": stats = [
+                {"name": "Nouns", "count": int(self.nouns)},
+                {"name": "Verbs", "count": int(self.verbs)},
+                {"name": "Adjectives", "count": int(self.adjectives)},
+                {"name": "Other", "count": int(self.other)}
+            ]
+            case "score": stats = [
+                {"name": "Learned", "count": self.learnt},
+                {"name": "New", "count": self.new},
+                {"name": "Unlearned", "count": self.repeat}
+            ]
+            case "bad_vals": stats = [
+                {"name": "Duplicates", "count": self.duplicates},
+                {"name": "Nulls", "count": self.nulls},
+            ]
+        return stats
