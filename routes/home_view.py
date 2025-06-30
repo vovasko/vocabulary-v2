@@ -1,7 +1,8 @@
 import flet as ft
 from components.appbar import AppBar
 from components.buttons import RefreshButton
-from services.home_helpers import DayWord
+from components.graphs import StatsPieChart
+from services.home_helpers import DayWord, Statistics
 from services.DF_manager import DFManager
 
 class HomeView(ft.Column):
@@ -14,9 +15,11 @@ class HomeView(ft.Column):
             "margin":ft.margin.only(50, 20, 50, 0),
         }
 
-        self.day_word = DayWord()
         self.df_manager = df_manager
+        self.day_word = DayWord()
+        self.statistics = Statistics(self.df_manager)
 
+        self.create_integrity_flag()
         self.create_word_card()
         self.create_nav_card()
         self.create_stats_card()
@@ -129,35 +132,82 @@ class HomeView(ft.Column):
         )
 
     def create_stats_card(self):
-        def mock_chart(label):
+        def chart_layout(label, mode, color = None):
+            text_ref = ft.Ref[ft.Text]()
+            caption_text = ft.Text("", size=14, color="white", ref=text_ref)
+            chart = StatsPieChart(self.statistics.get_stats(mode), color, text_ref)
             return ft.Container(
                 content=ft.Column([
-                    ft.Text(label, size=14, color="white"),
-                    ft.Container(
-                        height=80,
-                        width=80,
-                        bgcolor="#3A3A3C",
-                        border_radius=10
-                    )
+                    ft.Text(label, size=14, color="white", weight="bold"),
+                    chart,
+                    caption_text
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 padding=10
             )
 
-        self.stats_card = ft.Column(
-            controls=[
-                ft.Container(
-                    content=ft.Column([
+        self.stats_card = ft.Container(
+                content=ft.Column([
+                    ft.Row(controls=[
                         ft.Text("Your Learning Statistics", size=16, weight="bold", color="white"),
-                        ft.Row([
-                            mock_chart("Words learned"),
-                            mock_chart("Review rate"),
-                            mock_chart("Daily streak"),
-                        ], alignment=ft.MainAxisAlignment.SPACE_EVENLY)
-                    ]),
-                    padding=20,
-                    **self.container_style
-                )
-            ]
-        )
+                        ft.Text(f"Vocabulary size - {self.statistics.words_count}")
+                        ],alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+                    ),
+                    ft.Row([
+                        chart_layout("Word Types", "type"),
+                        chart_layout("Vocabulary Progress", "score", "DEEP_PURPLE"),
+                        ft.Container(
+                            content=ft.Column([
+                                ft.Text("Integrity Check", size=14, color="white", weight="bold"),
+                                self.integrity_icon,
+                                self.integrity_caption
+                            ],
+                            alignment=ft.MainAxisAlignment.CENTER,
+                            horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                            padding=10
+                        )
+                        # ===
+                    ],
+                    alignment=ft.MainAxisAlignment.SPACE_EVENLY,
+                    spacing=10
+                    )
+                ]),
+                padding=20,
+                **self.container_style
+            )
+        
+    def create_integrity_flag(self):
+        text_ref = ft.Ref[ft.Text]()
+        self.integrity_caption = ft.Text("", size=14, color="white", ref=text_ref)
+        def update_caption(e: ft.ControlEvent):
+            self.integrity_caption.value = e.control.data["caption"] if self.integrity_caption.value == "" else ""
+            self.integrity_caption.update()
+        
+        def go_to_table(e: ft.ControlEvent):
+            self.integrity_caption.value = ""
+            e.page.go("/table")
+        
+        if self.statistics.bad_vals_flag: # Bad values present
+            self.integrity_icon = ft.IconButton(
+                icon=ft.Icons.ERROR_OUTLINE_ROUNDED,
+                icon_color=ft.Colors.RED_300,
+                icon_size=130,
+                padding=10,
+                data = {"caption": "Issues found!"},
+                tooltip = f"Duplicates - {self.statistics.duplicates}\nNulls - {self.statistics.nulls}",
+                style=ft.ButtonStyle(overlay_color=ft.Colors.with_opacity(0.0, "white")),
+                on_hover=update_caption,
+                on_click=go_to_table
+            )
+        else: 
+            self.integrity_icon = ft.IconButton(
+                icon=ft.Icons.CHECK_CIRCLE_OUTLINE_ROUNDED,
+                icon_size=130,
+                icon_color=ft.Colors.GREEN_300,
+                padding=10,
+                data = {"caption":"All entries are valid"},
+                on_hover=update_caption,
+                style=ft.ButtonStyle(overlay_color=ft.Colors.with_opacity(0.0, "white")),
+                mouse_cursor=ft.MouseCursor.BASIC
+            )        
