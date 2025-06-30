@@ -3,6 +3,7 @@ from services.settings import SettingsManager
 from services.edit_dialog import EditDialog
 from services.DF_manager import DFManager
 from components.appbar import AppBar
+from components.buttons import StateButton
 from pandas import DataFrame
 
 class TableView(ft.Column):
@@ -49,12 +50,6 @@ class TableView(ft.Column):
             if e.control.bgcolor == ft.Colors.RED_300: e.control.bgcolor = None
             else: e.control.bgcolor = ft.Colors.RED_300
             e.control.update()
-
-        def color_wrapper(e: ft.ControlEvent, function: callable, *args, **kwargs):
-            if e.control.bgcolor == ft.Colors.GREEN_300: e.control.bgcolor = None
-            else: e.control.bgcolor = ft.Colors.GREEN_300
-            e.control.update()
-            if function: function(*args, **kwargs)
         
         self.delete_btn = ft.FilledButton(
             "Delete",
@@ -77,15 +72,15 @@ class TableView(ft.Column):
             icon=ft.Icons.ADD, 
             expand=True
         )
-        self.sort_btn = ft.FilledButton(
-            "Old first",
-            on_click=lambda e: color_wrapper(e, self.table.sort_index),
+        self.sort_btn = StateButton(
+            on_click=self.table.sort_index,
+            text="Old first",
             icon=ft.Icons.SORT_ROUNDED,
             expand=True
         )
-        self.filter_btn = ft.FilledButton(
-            "Filter",
-            on_click=lambda e: color_wrapper(e, self.filter_toggle),
+        self.filter_btn = StateButton(
+            on_click=self.filter_toggle,
+            text="Filter",
             icon=ft.Icons.FILTER_ALT_ROUNDED,
             expand=True
         )
@@ -178,7 +173,7 @@ class TableView(ft.Column):
         self.filter_row.controls.append(self.rows_count_txt)
         self.filter_row.update() 
 
-    def filter_toggle(self):
+    def filter_toggle(self, e: ft.ControlEvent = None):
         self.filter_row.controls = [self.filter_dropdown]
         self.filter_dropdown.value = "Type"
         self.on_filter_changed()
@@ -389,7 +384,7 @@ class ListViewTable(ft.ListView):
         self._build_content(sorted=True)
         self.update()
 
-    def sort_index(self):
+    def sort_index(self, e: ft.ControlEvent = None):
         self.sort_old_first = not self.sort_old_first
         self.sort("index")
 

@@ -21,3 +21,32 @@ class RefreshButton(ft.IconButton):
         self.update()
         if self._external_on_click:
             self._external_on_click(e)
+
+class StateButton(ft.FilledButton):
+    def __init__(self, on_click=None, on_click_args=None, active_bgcolor=ft.Colors.GREEN_300, active_color = None, **kwargs):
+        # Extract and store user-provided on_click handler
+        self._user_on_click = on_click
+        self._on_click_args = None if on_click_args == None else on_click_args
+        self._active_bgcolor = active_bgcolor
+        self._active_color = active_color
+        self.selected = False
+
+        super().__init__(**kwargs)
+
+        self._default_bgcolor = self.bgcolor
+        self._default_color = self.color
+        self.on_click = self._wrapped_on_click
+
+    def _wrapped_on_click(self, e: ft.ControlEvent):
+        self.selected = not self.selected
+        # Toggle color
+        self.bgcolor = self._active_bgcolor if self.selected else self._default_bgcolor
+        if self._default_color:
+            self.color = self._active_color if self.selected else self._default_color
+        self.update()
+
+        # Call the actual user-provided function with its arguments
+        if self._user_on_click and self._on_click_args:
+            self._user_on_click(e, *self._on_click_args)
+        elif self._user_on_click:
+            self._user_on_click(e)
