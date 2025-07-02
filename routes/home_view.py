@@ -36,7 +36,7 @@ class HomeView(ft.Column):
             controls=self.controls,
             vertical_alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            appbar=AppBar(title="Home Page 2.0").build_home(),
+            appbar=AppBar(title="Home Page").build_home(),
             padding=ft.padding.only(0, 10, 0, 10),
             scroll=ft.ScrollMode.HIDDEN
         )
@@ -112,7 +112,6 @@ class HomeView(ft.Column):
                     ft.Row([ft.Text("Word of the Day", size=16, weight="bold", color="white")], alignment="center", expand=True),
                     ft.Row([self.refresh_btn], alignment="end", expand=True)
                 ], alignment="center"),
-                ft.Container(height=10), # spacing
                 ft.Text(get_display_word(), size=28, weight="bold", color="white", ref=self.word_card_refs["german"]),
                 ft.Text(self.day_word.word_data["translation"], size=20, color=ft.Colors.WHITE70, ref=self.word_card_refs["translation"]),
                 ft.Container(height=10),  # spacing

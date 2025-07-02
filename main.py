@@ -30,7 +30,12 @@ def main(page: ft.Page):
             foreground_color=ft.Colors.WHITE70,
             hover_color=ft.Colors.WHITE10,
             disabled_foreground_color=ft.Colors.GREY
-            )
+            ),
+        filled_button_theme=ft.FilledButtonTheme(            
+            foreground_color=ft.Colors.WHITE,
+            bgcolor=ft.Colors.INDIGO_700,
+            overlay_color=ft.Colors.BLACK,
+            ),
         )
     
     def route_change(e: ft.RouteChangeEvent):

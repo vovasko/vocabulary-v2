@@ -23,7 +23,7 @@ class RefreshButton(ft.IconButton):
             self._external_on_click(e)
 
 class StateButton(ft.FilledButton):
-    def __init__(self, on_click=None, on_click_args=None, active_bgcolor=ft.Colors.GREEN_300, active_color = None, **kwargs):
+    def __init__(self, on_click=None, on_click_args=None, active_bgcolor=ft.Colors.GREEN_700, active_color = None, **kwargs):
         # Extract and store user-provided on_click handler
         self._user_on_click = on_click
         self._on_click_args = None if on_click_args == None else on_click_args

@@ -66,14 +66,15 @@ class FlashCardView(ft.Column):
             value="new",
         )
 
-        self.start_btn = ft.ElevatedButton("Start", on_click=self.start_game)
+        self.start_btn = ft.ElevatedButton(content=ft.Text("Start", size=16, weight="bold"), on_click=self.start_game, width=150)
         self.settings_view = ft.Container(
             content=ft.Column([
                 ft.Text("Flashcard Settings", size=24),
                 self.deck_choice,
                 self.start_btn
             ], horizontal_alignment="center", alignment="center", spacing=20),
-            bgcolor=ft.Colors.LIME_800,
+            # bgcolor=ft.Colors.LIGHT_BLUE_700,
+            bgcolor=ft.Colors.INDIGO_700,
             **self.card_style,
         )
 
@@ -89,7 +90,7 @@ class FlashCardView(ft.Column):
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=20
             ),
-            bgcolor=ft.Colors.BLUE_200,
+            bgcolor=ft.Colors.LIGHT_BLUE_800,
             opacity=1.0,
             animate_opacity=ft.Animation(300, "easeInOut"),
             animate_offset=ft.Animation(300, "easeInOut"),
@@ -119,7 +120,7 @@ class FlashCardView(ft.Column):
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=20
             ),
-            bgcolor=ft.Colors.GREEN_200,
+            bgcolor=ft.Colors.GREEN_800,
             opacity=0.0,
             animate_opacity=ft.Animation(300, "easeInOut"),
             animate_offset=ft.Animation(300, "easeInOut"),
@@ -129,14 +130,14 @@ class FlashCardView(ft.Column):
         )
 
         # === END VIEW === MARK: End view
-        self.back_to_settings_btn = ft.ElevatedButton("Back to Settings", on_click=lambda e: self.change_view(e, 0))
+        self.back_to_settings_btn = ft.ElevatedButton(content=ft.Text("Back to settings", size=16, weight="bold"), on_click=lambda e: self.change_view(e, 0), width=180)
         self.end_screen = ft.Container(
             content=ft.Column([
                 ft.Text("Session Completed!", size=24),
                 # ft.Text(f"Correct Answers: {self.correct_answers}/{self.total_questions}", size=18),
                 self.back_to_settings_btn
             ], horizontal_alignment="center", alignment="center", spacing=20),
-            bgcolor=ft.Colors.PURPLE_100,
+            bgcolor=ft.Colors.INDIGO_700,
             **self.card_style
         )
 
@@ -146,7 +147,7 @@ class FlashCardView(ft.Column):
                 ft.Text("There are no words to learn in this deck", size=24),
                 self.back_to_settings_btn
             ], horizontal_alignment="center", alignment="center", spacing=20),
-            bgcolor=ft.Colors.PURPLE_100,
+            bgcolor=ft.Colors.INDIGO_700,
             **self.card_style
         )
 

@@ -9,7 +9,6 @@ class StatsPieChart(ft.PieChart):
         self.total_words = sum(item["count"] for item in self.display_data)
         for item in self.display_data:
             item["percentage"] = int(item["count"] / self.total_words * 100)
-            print(item)
         
         # Colors setup
         self.main_color = main_color if main_color != None else "INDIGO"

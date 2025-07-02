@@ -17,6 +17,7 @@ class TableView(ft.Column):
             "padding" : ft.padding.all(12),
             "margin" : ft.margin.only(12, 0, 12, 0)
         }
+
         self.settings = SettingsManager()
         self.df_manager = df_manager
         self.create_controls()
@@ -47,8 +48,8 @@ class TableView(ft.Column):
         self.table = ListViewTable(df_manager=self.df_manager, settings=self.settings, on_selection_changed=self.update_buttons)
         
         def delete_hover(e: ft.ControlEvent):
-            if e.control.bgcolor == ft.Colors.RED_300: e.control.bgcolor = None
-            else: e.control.bgcolor = ft.Colors.RED_300
+            if e.control.bgcolor == ft.Colors.RED_700: e.control.bgcolor = None
+            else: e.control.bgcolor = ft.Colors.RED_700
             e.control.update()
         
         self.delete_btn = ft.FilledButton(
@@ -56,8 +57,8 @@ class TableView(ft.Column):
             disabled=True,
             on_click=lambda e: self.table.delete_selected(),
             icon=ft.Icons.DELETE_FOREVER_ROUNDED,
-            expand=True,
-            on_hover=delete_hover
+            on_hover=delete_hover,
+            expand=True
         )
         self.edit_btn = ft.FilledButton(
             "Edit",
@@ -93,7 +94,7 @@ class TableView(ft.Column):
                 self.filter_btn
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN
-        )
+        )        
 
     def create_filter_controls(self):
         self.filter_dropdown = ft.Dropdown(
@@ -183,17 +184,26 @@ class TableView(ft.Column):
         self.table.filter_selected()
 
         self.update()
-    
+
     def update_buttons(self, selected_count: int):
+        def change_colors(btn):
+            if btn.disabled:
+                btn.bgcolor=ft.Colors.ON_SURFACE.with_opacity(0.18, "grey")
+                btn.color=ft.Colors.ON_SURFACE.with_opacity(0.38, "white")
+            else:
+                btn.bgcolor = ft.Colors.INDIGO_700
+                btn.color = ft.Colors.WHITE
+            btn.update()
+
         self.delete_btn.disabled = selected_count == 0
-        self.delete_btn.bgcolor = None
-        self.delete_btn.update()
+        change_colors(self.delete_btn)
+
         if selected_count == 1:
             self.edit_btn.disabled = False
-            self.edit_btn.update()
+            change_colors(self.edit_btn)
         elif not self.edit_btn.disabled:
             self.edit_btn.disabled = True
-            self.edit_btn.update()
+            change_colors(self.edit_btn)
 
 class ListViewTable(ft.ListView):
     def __init__(self, df_manager: DFManager = None, settings: SettingsManager = None, records: DataFrame = None, on_selection_changed: callable = None):
@@ -308,7 +318,7 @@ class ListViewTable(ft.ListView):
             container.bgcolor = ft.Colors.GREY
         else:
             self.selected_refs.append(ref)
-            container.bgcolor = ft.Colors.INDIGO_900
+            container.bgcolor = ft.Colors.INDIGO_500
 
         container.update()
         # print(f"{len(self.selected_refs)=}")
