@@ -1,4 +1,4 @@
-import json
+from json import load, dump
 from pathlib import Path
 
 class SettingsManager:
@@ -10,13 +10,13 @@ class SettingsManager:
         if self.file_path.exists():
             with open(self.file_path, "r", encoding="utf-8") as f:
                 print("Settings loaded")
-                return json.load(f)
+                return load(f)
         print("Failed to load settings")
         return {}
 
     def save(self):
         with open(self.file_path, "w", encoding="utf-8") as f:
-            json.dump(self._data, f, indent=4)
+            dump(self._data, f, indent=4)
 
     def get(self, key, default=None):
         parts = key.split(".")

@@ -4,8 +4,8 @@ from services.settings import SettingsManager
 from services.DF_manager import DFManager
 from services.translator import Translator
 from routes.table_view import ListViewTable
-import pandas as pd
-import threading
+from pandas import DataFrame, Series
+from threading import Thread
 from re import split
 
 class TranslationView(ft.Column):
@@ -213,7 +213,7 @@ class TranslationView(ft.Column):
             input_data = [w.strip() for w in words if w.strip()]
             print("Parsed words:", input_data)
 
-        self.translator.input_data = pd.Series(input_data)
+        self.translator.input_data = Series(input_data)
         self.translator.clean_data()
         
         # Clear input field
@@ -237,7 +237,7 @@ class TranslationView(ft.Column):
         self.progress_bar.update()
         self.translate_btn.disabled = True
         self.translate_btn.update()
-        threading.Thread(
+        Thread(
             target=self.translator.get_netz_info, 
             args=(
                 self.settings._data,
@@ -267,7 +267,7 @@ class TranslationView(ft.Column):
             # Add new data to db
             self.df_manager.add_translated_data(self.translator.data)
             # Clear translator dataframe for new words
-            self.translator.data = pd.DataFrame()
+            self.translator.data = DataFrame()
         else:
             self.translator.data = self.translator.data[["type", "german"]]
             self.translate_btn.disabled = False

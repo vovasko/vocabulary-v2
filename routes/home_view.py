@@ -13,6 +13,7 @@ class HomeView(ft.Column):
             "bgcolor":ft.Colors.with_opacity(0.45, ft.Colors.GREY_800),
             "border_radius":12,
             "margin":ft.margin.only(50, 20, 50, 0),
+            "width":800,
         }
 
         self.df_manager = df_manager
@@ -27,7 +28,8 @@ class HomeView(ft.Column):
         self.controls = [
             self.word_card,
             self.nav_card,
-            self.stats_card
+            self.stats_card,
+            ft.Container(height=20) # Spacing
         ]
 
     def fetch_view(self) -> ft.View:
@@ -166,7 +168,6 @@ class HomeView(ft.Column):
                             horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                             padding=10
                         )
-                        # ===
                     ],
                     alignment=ft.MainAxisAlignment.SPACE_EVENLY,
                     spacing=10

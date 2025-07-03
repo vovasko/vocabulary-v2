@@ -1,19 +1,16 @@
-import re
-import requests
+from re import compile
+from requests import get, RequestException
 from bs4 import BeautifulSoup
-import pandas as pd
-import time
+from pandas import DataFrame, Series, concat, read_csv
+from time import sleep
 from pathlib import Path
-import spacy # python -m spacy download de_core_news_sm
+from spacy import load # python -m spacy download de_core_news_sm
 
 class TranslationError(Exception):
     def __init__(self, message: str, found = True):
         self.message = str(message)
         self.found = found
         super().__init__(self.message)
-
-class ConnectionError(Exception):
-    pass
 
 class Netzverb: 
     # base_url = "https://www.verbformen.de/?w="
@@ -44,11 +41,11 @@ class Netzverb:
     @classmethod
     def _fetch_response(self, request_url, sleep_time: int = 1):
         try:
-            response = requests.get(request_url)
+            response = get(request_url)
             response.raise_for_status()  # Raise HTTPError for bad responses
-            time.sleep(sleep_time)
+            sleep(sleep_time)
             return BeautifulSoup(response.content, "html.parser")
-        except requests.exceptions.RequestException as e:
+        except RequestException as e:
             raise TranslationError(f"Failed to fetch URL")
         
     @classmethod # Check whether Netzverb has a page related to specific word
@@ -56,7 +53,7 @@ class Netzverb:
         present = False
         if soup == None: pass
 
-        if soup.find("h1", string=re.compile(r"^Definition")):
+        if soup.find("h1", string=compile(r"^Definition")):
             present = True
         
         if not present: raise TranslationError("Word not found on Netzverb", False)
@@ -167,12 +164,12 @@ class Netzverb:
 
 class Translator:
     def __init__(self):
-        self.input_data = pd.Series()
+        self.input_data = Series()
         # columns=["type", "german", "translation", "second_translation", "example", "meaning", "score"]
-        self.data = pd.DataFrame()
+        self.data = DataFrame()
         
     def read_data(self, file):
-        self.input_data = (pd.read_csv(file, header=None, names=["Input"])
+        self.input_data = (read_csv(file, header=None, names=["Input"])
                     .dropna()
                     .reset_index(drop=True))
 
@@ -187,17 +184,15 @@ class Translator:
             return None, phrase.strip()
     
     def word_type(self):
-        nlp = spacy.load("de_core_news_sm", disable=["ner", "parser"])
+        nlp = load("de_core_news_sm", disable=["ner", "parser"])
         func = lambda x: nlp(x)[0].pos_
         self.data.type = self.data.type.fillna(self.data.german.apply(func))
-        # print("Word type defined")
 
     def clean_data(self):
-        cleaned_data = pd.DataFrame()
-        cleaned_data[["type", "german"]] = self.input_data.apply(lambda x: pd.Series(self.noun_type(x)))
-        self.input_data = pd.Series()
-        self.data = pd.concat([self.data, cleaned_data])
-        # print("Data cleaned")
+        cleaned_data = DataFrame()
+        cleaned_data[["type", "german"]] = self.input_data.apply(lambda x: Series(self.noun_type(x)))
+        self.input_data = Series()
+        self.data = concat([self.data, cleaned_data])
         self.word_type()
 
     def output(self, file_name="vocabulary.csv"):
@@ -295,15 +290,5 @@ class Translator:
                 "failed_words" : failed_words
             })
 
-
 if __name__ == "__main__":
     pass
-
-# === Tasks left to do: === 
-# Create TextField and collect data from it
-# Create file picking and loading functionality
-# Create word of the day function in Netzverb and place to store it in settings
-# Create function to check connection to the website
-# Fill unsuccessful translations with data of one kind
-# Save translated data to the db
-# Display translated data on the translation view (maybe display input words and then append information about them)
