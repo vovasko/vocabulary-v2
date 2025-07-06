@@ -2,8 +2,6 @@ import flet as ft
 from services.settings import SettingsManager
 from components.appbar import AppBar
 
-settings = SettingsManager()
-
 class SettingsView(ft.Column):
     def __init__(self):
         super().__init__(spacing=12, scroll="auto", width=500, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
@@ -14,6 +12,8 @@ class SettingsView(ft.Column):
             "padding" : ft.padding.all(12),
             "margin" : ft.margin.only(12, 0, 12, 0)
         }
+
+        self.settings = SettingsManager()
 
         self.create_translation_layout()
         self.create_table_layout()
@@ -46,7 +46,7 @@ class SettingsView(ft.Column):
         )
     
     def save_on_exit(self):
-        settings.save()
+        self.settings.save()
         
     def create_translation_layout(self):
         title = ft.Container(
@@ -162,14 +162,14 @@ class SettingsView(ft.Column):
     def create_switch_controls(self, parent) -> list[ft.Row]:
         # Parent is name of a root setting for the nested one - ["columns", "flashcards"]
         def change(e: ft.ControlEvent):
-            settings.set(
+            self.settings.set(
                 key=e.control.label.value,
                 value=e.control.value
             )
 
         controls = []
         
-        for key,value in settings.get(parent, {}).items():
+        for key,value in self.settings.get(parent, {}).items():
             if key == "german": continue
             row = ft.Row(
                 spacing=0,
@@ -192,7 +192,7 @@ class SettingsView(ft.Column):
         return controls
     
     def create_lang_selector(self, main: bool) -> ft.Row:
-        lang_list = dict(settings.get("lang_list")) # Create main lang list
+        lang_list = dict(self.settings.get_langs()) # Create main lang list
         if main: lang_var = "main_lang"
         else:
             lang_var = "second_lang"
@@ -200,10 +200,10 @@ class SettingsView(ft.Column):
 
         def selected(e: ft.ControlEvent):
             lang_text.value = e.control.data["lang"]
-            settings.set(lang_var, e.control.data)
+            self.settings.set(lang_var, e.control.data)
             self.update()
 
-        lang_text = ft.Text(value=settings.get(lang_var)["lang"], text_align=ft.TextAlign.END)
+        lang_text = ft.Text(value=self.settings.get(lang_var)["lang"], text_align=ft.TextAlign.END)
         row = ft.Row(
             controls=[
                 lang_text,
@@ -222,11 +222,11 @@ class SettingsView(ft.Column):
     def create_segmented_btn(self, mode) -> ft.CupertinoSlidingSegmentedButton:
         # Mode - [examples, meanings, cards_in_deck]
         options = []
-        current_value = settings.get(mode)
+        current_value = self.settings.get(mode)
 
         def on_change(e: ft.ControlEvent):
             selected = options[e.control.selected_index]
-            settings.set(key=mode, value=selected)
+            self.settings.set(key=mode, value=selected)
 
         match mode:
             case "cards_in_deck": 

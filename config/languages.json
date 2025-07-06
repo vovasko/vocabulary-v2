@@ -1,0 +1,31 @@
+{
+    "lang_list": {
+        "uk": "Ukrainian",
+        "en": "English",
+        "es": "Spanish",
+        "fr": "French",
+        "tr": "Turkish",
+        "pt": "Portuguese",
+        "it": "Italian",
+        "ro": "Romanian",
+        "hu": "Hungarian",
+        "pl": "Polish",
+        "el": "Greek",
+        "nl": "Dutch",
+        "cs": "Czech",
+        "sv": "Swedish",
+        "da": "Danish",
+        "ja": "Japanese",
+        "ca": "Catalan",
+        "fi": "Finnish",
+        "no": "Norwegian",
+        "eu": "Basque",
+        "sr": "Serbian",
+        "mk": "Macedonian",
+        "sl": "Slovenian",
+        "sk": "Slovak",
+        "bs": "Bosnian",
+        "hr": "Croatian",
+        "bg": "Bulgarian"
+    }
+}

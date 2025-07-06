@@ -4,6 +4,7 @@ from pathlib import Path
 class SettingsManager:
     def __init__(self):
         self.file_path = Path(__file__).parent.parent / "config/settings.json"
+        self.lang_path = Path(__file__).parent.parent / "config/languages.json"
         self._data = self._load()
 
     def _load(self):
@@ -33,6 +34,15 @@ class SettingsManager:
         for part in parts[:-1]:
             d = d.setdefault(part, {})
         d[parts[-1]] = value
+
+    def get_langs(self):
+        if self.lang_path.exists():
+            with open(self.lang_path, "r", encoding="utf-8") as f:
+                langs = load(f)
+                return langs["lang_list"]
+        else: 
+            print("Failed to load languages")
+            return {"en": "English"}
 
     @property
     def data(self):
