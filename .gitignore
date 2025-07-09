@@ -7,3 +7,6 @@ venv/
 
 # VS Code settings
 .vscode/
+
+build/
+build_venv/

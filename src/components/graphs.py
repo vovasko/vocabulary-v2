@@ -6,7 +6,7 @@ class StatsPieChart(ft.PieChart):
         super().__init__(sections_space=0, center_space_radius=25, width=150, height=150)
         # Data setup
         self.display_data = sorted(display_data, key=lambda x: x["count"], reverse=True) # Sort data by "count"
-        self.total_words = sum(item["count"] for item in self.display_data)
+        self.total_words = max(sum(item["count"] for item in self.display_data), 1)
         for item in self.display_data:
             item["percentage"] = int(item["count"] / self.total_words * 100)
         

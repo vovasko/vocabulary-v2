@@ -221,16 +221,17 @@ class ListViewTable(ft.ListView):
     def build_table(self):
         self.controls.clear()
         self.last_sort = {"col": None, "asc": False}
-        self.header = []
+        self.header_vals = []
+        self.header_ref = ft.Ref[ft.Container]()
         self.column_flexes_dict = {"type": 2, "german": 4, "translation": 6,
             "second_translation": 6, "example": 8, "meaning": 8, "score": 1 }
         if self.settings != None:
             for col, value in self.settings.get("columns").items():
-                if value: self.header.append(col)
+                if value: self.header_vals.append(col)
         else: 
-            self.header = list(self.records.columns)
+            self.header_vals = list(self.records.columns)
 
-        self.controls.append(self._build_row(self.header, is_header=True))
+        self.controls.append(self._build_row(self.header_vals, is_header=True, ref=self.header_ref))
         self._build_content()
     
     def _build_content(self, sorted = False):
@@ -243,7 +244,7 @@ class ListViewTable(ft.ListView):
             self.controls.append(container)
 
     def _build_row(self, data: tuple | list[str], ref=None, is_header = False):  
-        bgcolor = ft.Colors.GREY_700 if is_header else ft.Colors.GREY
+        default_bgcolor = ft.Colors.with_opacity(0.45, ft.Colors.GREY_800) if is_header else ft.Colors.GREY_700
         text_style = {
             "size":14,
             "overflow": ft.TextOverflow.ELLIPSIS, 
@@ -258,7 +259,6 @@ class ListViewTable(ft.ListView):
                     case "second_translation": text_data.append("Translation 2")
                     case "score": text_data.append("Pt")
                     case _ : text_data.append(item.capitalize())
-            bgcolor = ft.Colors.GREY_700
             controls_list = [
                 ft.Container(
                     content=ft.Text(
@@ -284,7 +284,7 @@ class ListViewTable(ft.ListView):
                     data={"col":col_name},
                     **text_style
                 )
-                for col_name in self.header
+                for col_name in self.header_vals
             ]
 
         row = ft.Container(
@@ -296,11 +296,11 @@ class ListViewTable(ft.ListView):
             ),
             padding=ft.padding.symmetric(horizontal=16, vertical=12),
             border_radius=12,
-            bgcolor=bgcolor,
+            bgcolor=default_bgcolor,
             ink=True,
             animate=ft.Animation(200, "easeInOut"),
             ref=ref,
-            data={"ref": ref,"rowid": data.Index} if not is_header else None,
+            data={"ref": ref,"rowid": data.Index} if not is_header else {"ref": ref},
         )
         if not is_header and self.df_manager != None:
             row.on_click = self.on_container_click
@@ -315,7 +315,7 @@ class ListViewTable(ft.ListView):
 
         if ref in self.selected_refs:
             self.selected_refs.remove(ref)
-            container.bgcolor = ft.Colors.GREY
+            container.bgcolor = ft.Colors.GREY_700
         else:
             self.selected_refs.append(ref)
             container.bgcolor = ft.Colors.INDIGO_500
@@ -355,6 +355,8 @@ class ListViewTable(ft.ListView):
         ref = edited_container_ref
         if ref in self.selected_refs:
             self.selected_refs.remove(ref)
+            ref.current.bgcolor = ft.Colors.GREY_700
+            ref.current.update()
             if self.on_selection_changed: self.on_selection_changed(len(self.selected_refs))
         
         container = ref.current
@@ -373,8 +375,8 @@ class ListViewTable(ft.ListView):
 
     def sort(self, col_name: str):
         if self.records.shape[0] == 0: return # no records to sort
-        if col_name != "index" and self.last_sort["col"] == "index" and  self.last_sort["asc"] == True: return
-            
+        if col_name != "index" and self.last_sort["col"] == "index" and self.last_sort["asc"] == True: return
+        
         if self.last_sort["col"] == col_name:
             self.last_sort["asc"] = not self.last_sort["asc"]
         else: 
@@ -390,19 +392,36 @@ class ListViewTable(ft.ListView):
         
         if self.on_selection_changed: self.on_selection_changed(0)
         self.selected_refs.clear()
-        
+        self.highlight_col(col_name)
         self._build_content(sorted=True)
         self.update()
 
     def sort_index(self, e: ft.ControlEvent = None):
         self.sort_old_first = not self.sort_old_first
         self.sort("index")
+        self.highlight_col("index", clean=True)
+
+    def highlight_col(self, col_name: str, clean = False):
+        if clean: 
+            for container in self.header_ref.current.content.controls:
+                container.bgcolor = None
+                self.header_ref.current.update()
+        
+        if col_name == "index": return
+
+        for container in self.header_ref.current.content.controls:
+            if container.content.data["col_name"] == col_name: 
+                container.bgcolor = ft.Colors.GREEN_300
+            else: container.bgcolor = None
+
+        self.header_ref.current.update()
 
     def filter_selected(self):
         if not self.selected_filters or not len(self.selected_filters[1]):
             self.records = self.df_manager.data
         else:
             self.records = self.df_manager.fetch_df("filter", self.selected_filters)
-
+        
+        self.highlight_col("none", True)
         self._build_content()
         self.update()

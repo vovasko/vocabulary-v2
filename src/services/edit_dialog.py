@@ -129,7 +129,6 @@ class EditDialog(ft.AlertDialog):
             self.highlight_important_vals()
             return False
 
-        self.original_container.bgcolor = ft.Colors.GREY
         if self.on_save:
             self.on_save(self.original_container.data["ref"])
         return True

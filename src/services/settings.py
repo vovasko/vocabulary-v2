@@ -1,11 +1,17 @@
 from json import load, dump
 from pathlib import Path
+import sys
 
 class SettingsManager:
     def __init__(self):
-        self.file_path = Path(__file__).parent.parent / "config/settings.json"
-        self.lang_path = Path(__file__).parent.parent / "config/languages.json"
+        self.file_path = self.get_asset_path("config/settings.json")
+        self.lang_path = self.get_asset_path("config/languages.json")
         self._data = self._load()
+
+    def get_asset_path(self, relative_path: str) -> Path:
+        base_path = Path(__file__).parent.parent.parent
+
+        return base_path / "assets" / relative_path
 
     def _load(self):
         if self.file_path.exists():

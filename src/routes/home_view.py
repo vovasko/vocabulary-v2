@@ -84,6 +84,8 @@ class HomeView(ft.Column):
             e.control.label.value = "Added to Vocabulary"
             e.control.disabled = True
             e.control.update()
+            # Update stats
+            self.update_stats()
 
         def on_refresh(e: ft.ControlEvent):
             # self.refresh_btn.disabled = True
@@ -133,31 +135,24 @@ class HomeView(ft.Column):
         )
 
     def create_stats_card(self):
-        def chart_layout(label, mode, color = None):
-            text_ref = ft.Ref[ft.Text]()
-            caption_text = ft.Text("", size=14, color="white", ref=text_ref)
-            chart = StatsPieChart(self.statistics.get_stats(mode), color, text_ref)
-            return ft.Container(
-                content=ft.Column([
-                    ft.Text(label, size=14, color="white", weight="bold"),
-                    chart,
-                    caption_text
-                ],
-                alignment=ft.MainAxisAlignment.CENTER,
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                padding=10
-            )
+        # Make sure there are data in db
+        no_data_flag: bool = self.statistics.words_count == 0
+        
+        # Create refs
+        size_ref = ft.Ref[ft.Text]()
+        chart_row_ref = ft.Ref[ft.Row]()
+        info_row_ref = ft.Ref[ft.Row]()
 
         self.stats_card = ft.Container(
                 content=ft.Column([
                     ft.Row(controls=[
                         ft.Text("Your Learning Statistics", size=16, weight="bold", color="white"),
-                        ft.Text(f"Vocabulary size - {self.statistics.words_count}")
+                        ft.Text(f"Vocabulary size - {self.statistics.words_count}", ref=size_ref)
                         ],alignment=ft.MainAxisAlignment.SPACE_BETWEEN
                     ),
                     ft.Row([
-                        chart_layout("Word Types", "type"),
-                        chart_layout("Vocabulary Progress", "score", "DEEP_PURPLE"),
+                        self.create_chart("Word Types", "type"),
+                        self.create_chart("Vocabulary Progress", "score", "DEEP_PURPLE"),
                         ft.Container(
                             content=ft.Column([
                                 ft.Text("Integrity Check", size=14, color="white", weight="bold"),
@@ -170,12 +165,35 @@ class HomeView(ft.Column):
                         )
                     ],
                     alignment=ft.MainAxisAlignment.SPACE_EVENLY,
-                    spacing=10
-                    )
+                    spacing=10,
+                    ref=chart_row_ref,
+                    visible=not no_data_flag
+                    ),
+                    ft.Row(
+                        [ft.Text("Vocabulary is empty", size=16)], 
+                        alignment="center", 
+                        ref=info_row_ref, 
+                        visible=no_data_flag)
                 ]),
                 padding=20,
+                data={"size_ref":size_ref, "chart_row": chart_row_ref, "info_row": info_row_ref},
                 **self.container_style
             )
+        
+    def create_chart(self, label, mode, color = None, chart_ref = None):
+        text_ref = ft.Ref[ft.Text]()
+        caption_text = ft.Text("", size=14, color="white", ref=text_ref)
+        chart = StatsPieChart(self.statistics.get_stats(mode), color, text_ref)
+        return ft.Container(
+            content=ft.Column([
+                ft.Text(label, size=14, color="white", weight="bold"),
+                chart,
+                caption_text
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            padding=10
+        )
         
     def create_integrity_flag(self):
         text_ref = ft.Ref[ft.Text]()
@@ -210,4 +228,22 @@ class HomeView(ft.Column):
                 on_hover=update_caption,
                 style=ft.ButtonStyle(overlay_color=ft.Colors.with_opacity(0.0, "white")),
                 mouse_cursor=ft.MouseCursor.BASIC
-            )        
+            )    
+
+    def update_stats(self):
+        self.statistics = Statistics(self.df_manager)
+        
+        # Update size stat
+        self.stats_card.data["size_ref"].current.value = f"Vocabulary size - {self.statistics.words_count}"
+        self.stats_card.data["size_ref"].current.update()
+
+        # Update graphs
+        self.stats_card.data["chart_row"].current.controls[0] = self.create_chart("Word Types", "type")
+        self.stats_card.data["chart_row"].current.controls[1] = self.create_chart("Vocabulary Progress", "score", "DEEP_PURPLE")
+        self.stats_card.data["chart_row"].current.visible = True
+        self.stats_card.data["chart_row"].current.update()
+
+        # Remove info row
+        if self.stats_card.data["info_row"].current.visible:
+            self.stats_card.data["info_row"].current.visible = False
+            self.stats_card.data["info_row"].current.update()

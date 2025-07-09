@@ -1,0 +1,21 @@
+[project]
+name = "Vocabulary Booster"
+version = "1.0.0"
+description = "App for translating, managing and learning German words"
+authors = [
+    {name = "Volodymyr Vasko", email = "vovasko16@gmail.com"}
+]
+dependencies = [
+    "flet==0.25.0",
+    "pandas==2.0.0",
+    "requests==2.31.0",
+    "beautifulsoup4==4.12.0",
+    "spacy==3.7.0"
+]
+
+[tool.flet]
+app.module = "main"
+app.path = "src"
+app.icon = "assets/icon.png"
+build_arch = "arm64"
+platforms = ["darwin_arm64"]

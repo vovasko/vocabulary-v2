@@ -17,7 +17,6 @@ class Netzverb:
     base_url = "https://www.verben.de/?w="
     noun_url = "https://www.verben.de/substantive/?w=" # + word + .htm
     conj_url = "https://www.verben.de/konjunktionen/?w="
-    # "https://www.verben.de/substantive/?w="
 
     nouns = ["der", "die", "das", "NOUN", "PROPN", "X"]
     verbs = ["VERB", "AUX"]
@@ -150,7 +149,7 @@ class Netzverb:
             type_and_word = [type_and_word[0], type_and_word[2]]
 
         new_word = {
-            "type"  :type_and_word[1].strip(),
+            "type"  :type_and_word[1].strip() if len(type_and_word) > 1 else None,
             "german":type_and_word[0].strip(),
             "translation":translation,
             "second_translation": self.get_translation(soup, settings["second_lang"]["code"]),
@@ -160,12 +159,10 @@ class Netzverb:
         }
 
         return new_word
-        
 
 class Translator:
     def __init__(self):
         self.input_data = Series()
-        # columns=["type", "german", "translation", "second_translation", "example", "meaning", "score"]
         self.data = DataFrame()
         
     def read_data(self, file):

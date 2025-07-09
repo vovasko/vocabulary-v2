@@ -5,21 +5,25 @@ from pathlib import Path
 
 class DBManager:
     def __init__(self):
-        self.path = Path(__file__).parent.parent / "db/vocabulary.db"
+        # self.path = Path(__file__).parent.parent / "db/vocabulary.db"
+        self.path = self.get_db_path()
         self.connect_to_db()
+
+    def get_db_path(self):
+        # Save in user-specific folder: ~/.vocab_app/
+        db_dir = Path.home() / ".vocab_app"
+        db_dir.mkdir(parents=True, exist_ok=True)
+        return db_dir / "vocabulary.db"
 
     def connect_to_db(self):
         try:
-            connection = sqlite3.connect(self.path)
-            connection.close()
+            self.connection = sqlite3.connect(self.path)
+            self.cursor = self.connection.cursor()
             print(f"[INFO] Connected to database at {self.path}")
+            self.create_table()
         except sqlite3.Error as e:
             print(f"[ERROR] Failed to connect to database: {e}")
-            raise  # re-raise to let the app handle it
-
-    def create_db(self):
-        with sqlite3.connect(self.path) as connection:
-            pass
+            raise 
 
     def create_table(self):
         with sqlite3.connect(self.path) as connection:
